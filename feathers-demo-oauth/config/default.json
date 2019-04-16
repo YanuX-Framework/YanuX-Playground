@@ -1,0 +1,39 @@
+{
+  "host": "localhost",
+  "port": 3030,
+  "public": "../public/",
+  "paginate": {
+    "default": 10,
+    "max": 50
+  },
+  "authentication": {
+    "secret": "bd8e8daf428c2eea356f2072431fd123e952f2c97a2c6934f58d6d43292c724362ad35a42cc900ab8dba66d6d93b541e070060ee8ce299185ef1129063ef3111bde2be665ad630be7307da41a02d2ac54616c5b635942dade70f15488edcbb260f74831b3b54a4bacf0342b8686fd0b1b492ca7853e41f5cd2c5fd5a2fa84ab2a99b5ca8c70cbe973426ca6b85289369be6c62792f6193be83ddb693ccc06925471dc496463329e49902c4faad1754321552baf01c94967f49ceeb6913e38429e856192c00cf5beb8f45cca1bdc76901f7d78eaf56f0658cb143cfec212908c0dd4960f8a4f1ae6af825fa00e40f6445eaff3a730515f6684307b4787257cfa9",
+    "strategies": [
+      "jwt"
+    ],
+    "path": "/authentication",
+    "service": "users",
+    "jwt": {
+      "header": {
+        "typ": "access"
+      },
+      "audience": "https://yourdomain.com",
+      "subject": "anonymous",
+      "issuer": "feathers",
+      "algorithm": "HS256",
+      "expiresIn": "1d"
+    },
+    "oauth2": {
+      "clientID": "589e28aa29861ccf26ae",
+      "clientSecret": "edef889017b953b83db2feed54b40e97f67b5255",
+      "successRedirect": "/"
+    },
+    "cookie": {
+      "enabled": true,
+      "name": "feathers-jwt",
+      "httpOnly": false,
+      "secure": false
+    }
+  },
+  "nedb": "../data"
+}

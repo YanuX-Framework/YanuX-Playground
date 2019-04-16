@@ -1,0 +1,22 @@
+Copiar a informação de contexto sobre a proximidade e suporte de VISUALIZAÇÃO e de CONTROLO por parte dos dispositivos presentes na proximidade.
+Se existir informação sobre a proximidade do dispositivo LOCAL:
+    Recolher a informação sobre quais são os dispositivos que se encontram ATIVOS e que suportam VISUALIZAÇÃO E CONTROLO.
+    Recolher a informação sobre quais são os dispositivos que se encontram ATIVOS e que suportam APENAS VISUALIZAÇÃO.
+    Recolher a informação sobre quais são os dispositivos que se encontram ATIVOS e que suportam APENAS CONTROLO.
+    Se existir ALGUM dispositivo ATIVO que suporte APENAS VISUALIZAÇÃO:
+        DESATIVAR VISUALIZAÇÃO nos dispositivos que se encontram ATIVOS e que suportam VISUALIZAÇÃO E CONTROLO na cópia da informação de contexto realizada anteriormente.
+    Se existir ALGUM dispositivo ATIVO que suporte APENAS CONTROLO:
+        DESATIVAR CONTROLO nos dispositivos que se encontram ATIVOS e que suportam VISUALIZAÇÃO E CONTROLO na cópia da informação de contexto realizada anteriormente.
+    RETORNAR a informação sobre o dispositivo LOCAL presente na cópia da informação de contexto.
+Caso contrário:
+    Utilizar a apresentação padrão (por exemplo, esconder componentes de visualização e controlo)
+
+--------------------------------------------------------------------------------
+Aplicações
+--------------------------------------------------------------------------------
+- Video player
+- Video call
+- Chão de fábrica
+- Integração com projeto de anotações de vídeos de dança
+- Enviar diapositivos de display/projector para telemóvel
+--------------------------------------------------------------------------------

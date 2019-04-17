@@ -1,0 +1,1 @@
+{"conditions":{"priority":1,"all":[{"operator":"equal","value":true,"fact":"localDeviceIsPresent"},{"operator":"notEqual","value":null,"fact":"viewOnlyDevices","path":".devices"}]},"priority":2,"event":{"type":"viewOnlyDevicesExist"}}

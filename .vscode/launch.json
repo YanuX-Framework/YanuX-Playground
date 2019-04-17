@@ -7,8 +7,8 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
-            "program": "${workspaceFolder}/app.js"
+            "name": "Debug YanuX Playground (rules)",
+            "program": "${workspaceFolder}/rules/app.js"
         }
     ]
 }

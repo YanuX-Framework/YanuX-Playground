@@ -45,6 +45,176 @@ function classic(localDeviceUuid, instances, proxemicsData) {
     console.log(componentsConfig);
 }
 
+function nodeRules(localDeviceUuid, instances, proxemicsData) {
+    //https://github.com/mithunsatheesh/node-rules
+    //https://www.npmjs.com/package/node-rules
+    const RuleEngine = require("node-rules");
+    const R = new RuleEngine();
+    const activeInstances = instances.filter(i => i.active);
+    const proxemics = proxemicsData.state;
+    const componentsDistribution = _.cloneDeep(proxemics);
+    const defaultComponentsConfig = {
+        view: false,
+        control: false
+    }
+    const facts = {
+        localDeviceUuid,
+        activeInstances,
+        proxemics,
+        componentsDistribution,
+        defaultComponentsConfig,
+        modules: { _: require('lodash') }
+    };
+    R.register({
+        name: 'Rule compute device type lists if local device is present',
+        condition: function (R) {
+            R.when(this.proxemics[this.localDeviceUuid]);
+        },
+        consequence: function (R) {
+            this.viewAndControlDevices = this.modules._.pickBy(this.proxemics, (caps, deviceUuid) => {
+                return caps.view === true && caps.control === true && this.modules._.some(this.activeInstances, instance => deviceUuid === instance.device.deviceUuid);
+            });
+            this.viewOnlyDevices = this.modules._.pickBy(this.proxemics, (caps, deviceUuid) => {
+                return caps.view === true && caps.control === false && this.modules._.some(this.activeInstances, instance => deviceUuid === instance.device.deviceUuid);
+            });
+            this.controlOnlyDevices = this.modules._.pickBy(this.proxemics, (caps, deviceUuid) => {
+                return caps.view === false && caps.control === true && this.modules._.some(this.activeInstances, instance => deviceUuid === instance.device.deviceUuid);
+            });
+            R.next();
+        }
+    });
+    R.register({
+        name: 'end when local device is present',
+        condition: function (R) {
+            R.when(this.proxemics[this.localDeviceUuid]);
+        },
+        consequence: function (R) {
+            this.componentsConfig = this.componentsDistribution[this.localDeviceUuid];
+            R.next();
+        }
+    });
+    R.register({
+        name: 'end when local device is not present',
+        condition: function (R) {
+            R.when(!this.proxemics[this.localDeviceUuid]);
+        },
+        consequence: function (R) {
+            this.componentsConfig = this.defaultComponentsConfig;
+            R.stop();
+        }
+    });
+    R.register({
+        name: 'dedicated view devices have priority',
+        condition: function (R) {
+            R.when(!this.modules._.isEmpty(this.viewOnlyDevices));
+        },
+        consequence: function (R) {
+            for (let deviceUuid in this.viewAndControlDevices) {
+                this.componentsDistribution[deviceUuid].view = false;
+            }
+            R.next();
+        }
+    });
+    R.register({
+        name: 'dedicated control devices have priority',
+        condition: function (R) {
+            R.when(!this.modules._.isEmpty(this.controlOnlyDevices));
+        },
+        consequence: function (R) {
+            for (let deviceUuid in this.viewAndControlDevices) {
+                this.componentsDistribution[deviceUuid].control = false;
+            }
+            R.next();
+        }
+    });
+    const rules = R.toJSON();
+    fs.writeFileSync('node-rules.json', JSON.stringify(rules));
+    R.fromJSON(rules);
+    R.execute(facts, function (data) {
+        console.log("---- Node Rules ----");
+        console.log(data.componentsConfig);
+    });
+}
+
+async function rools(localDeviceUuid, instances, proxemicsData) {
+    //https://github.com/frankthelen/rools
+    //https://www.npmjs.com/package/rools
+    const { Rools, Rule } = require('rools');
+
+    const activeInstances = instances.filter(i => i.active);
+    const proxemics = proxemicsData.state;
+    const componentsDistribution = _.cloneDeep(proxemics);
+    const defaultComponentsConfig = {
+        view: false,
+        control: false
+    }
+    const facts = {
+        localDeviceUuid,
+        activeInstances,
+        proxemics,
+        componentsDistribution,
+        defaultComponentsConfig
+    };
+    const ruleComputeDeviceTypeListsIfLocalDeviceIsPresent = new Rule({
+        name: 'Rule compute device type lists if local device is present',
+        when: facts => facts.proxemics[facts.localDeviceUuid],
+        then: (facts) => {
+            facts.viewAndControlDevices = _.pickBy(facts.proxemics, (caps, deviceUuid) => {
+                return caps.view === true && caps.control === true && _.some(activeInstances, instance => deviceUuid === instance.device.deviceUuid);
+            });
+            facts.viewOnlyDevices = _.pickBy(facts.proxemics, (caps, deviceUuid) => {
+                return caps.view === true && caps.control === false && _.some(activeInstances, instance => deviceUuid === instance.device.deviceUuid);
+            });
+            facts.controlOnlyDevices = _.pickBy(facts.proxemics, (caps, deviceUuid) => {
+                return caps.view === false && caps.control === true && _.some(activeInstances, instance => deviceUuid === instance.device.deviceUuid);
+            });
+        },
+    });
+    const ruleEndWhenLocalDeviceIsPresent = new Rule({
+        name: 'end when local device is present',
+        when: facts => facts.proxemics[facts.localDeviceUuid],
+        then: (facts) => {
+            facts.componentsConfig = facts.componentsDistribution[facts.localDeviceUuid];
+        },
+    });
+    const ruleWhenLocalDeviceIsNotPresent = new Rule({
+        name: 'end when local device is not present',
+        when: facts => !facts.proxemics[facts.localDeviceUuid],
+        then: (facts) => {
+            facts.componentsConfig = facts.defaultComponentsConfig
+        },
+    });
+    const ruleViewOnlyPriority = new Rule({
+        name: 'dedicated view devices have priority',
+        when: facts => !_.isEmpty(facts.viewOnlyDevices),
+        then: (facts) => {
+            for (let deviceUuid in facts.viewAndControlDevices) {
+                facts.componentsDistribution[deviceUuid].view = false;
+            }
+        },
+    });
+    const ruleControlOnlyPriority = new Rule({
+        name: 'dedicated control devices have priority',
+        when: facts => !_.isEmpty(facts.controlOnlyDevices),
+        then: (facts) => {
+            for (let deviceUuid in facts.viewAndControlDevices) {
+                facts.componentsDistribution[deviceUuid].control = false;
+            }
+        },
+    });
+    const rools = new Rools();
+    await rools.register([
+        ruleComputeDeviceTypeListsIfLocalDeviceIsPresent,
+        ruleEndWhenLocalDeviceIsPresent,
+        ruleWhenLocalDeviceIsNotPresent,
+        ruleViewOnlyPriority,
+        ruleControlOnlyPriority
+    ]);
+    await rools.evaluate(facts);
+    console.log("---- rools ----");
+    console.log(facts.componentsConfig);
+}
+
 function jsonRulesEngine(localDeviceUuid, instances, proxemicsData) {
     //https://github.com/cachecontrol/json-rules-engine
     //https://www.npmjs.com/package/json-rules-engine
@@ -258,179 +428,62 @@ function jsonRulesEngine(localDeviceUuid, instances, proxemicsData) {
         }
     });
     engine.rules.forEach((rule, index) => {
-        fs.writeFileSync('json-rules-engine-'+index+'.json', rule.toJSON());
+        fs.writeFileSync('json-rules-engine-' + index + '.json', rule.toJSON());
     });
 }
 
-/** TODO: Replace lodash with fully "native" solution in order to be able to "persist" the rules seamlessly! */
-function nodeRules(localDeviceUuid, instances, proxemicsData) {
-    //https://github.com/mithunsatheesh/node-rules
-    //https://www.npmjs.com/package/node-rules
-    const RuleEngine = require("node-rules");
-    const R = new RuleEngine();
-    const activeInstances = instances.filter(i => i.active);
-    const proxemics = proxemicsData.state;
-    const componentsDistribution = _.cloneDeep(proxemics);
-    const defaultComponentsConfig = {
-        view: false,
-        control: false
-    }
-    const facts = {
-        localDeviceUuid,
-        activeInstances,
-        proxemics,
-        componentsDistribution,
-        defaultComponentsConfig,
-        modules: { _: require('lodash') }
+function nools(localDeviceUuid, instances, proxemics) {
+    //https://www.npmjs.com/package/nools
+    //https://github.com/noolsjs/nools
+    console.log("---- nools ----");
+    const nools = require("nools");
+    const Fibonacci = function (sequence, value) {
+        this.sequence = sequence;
+        this.value = value || -1;
     };
-    R.register({
-        "name": 'Rule compute device type lists if local device is present',
-        "condition": function (R) {
-            R.when(this.proxemics[this.localDeviceUuid]);
-        },
-        "consequence": function (R) {
-            this.viewAndControlDevices = this.modules._.pickBy(this.proxemics, (caps, deviceUuid) => {
-                return caps.view === true && caps.control === true && this.modules._.some(this.activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-            this.viewOnlyDevices = this.modules._.pickBy(this.proxemics, (caps, deviceUuid) => {
-                return caps.view === true && caps.control === false && this.modules._.some(this.activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-            this.controlOnlyDevices = this.modules._.pickBy(this.proxemics, (caps, deviceUuid) => {
-                return caps.view === false && caps.control === true && this.modules._.some(this.activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-            R.next();
-        }
-    });
-    R.register({
-        "name": 'end when local device is present',
-        "condition": function (R) {
-            R.when(this.proxemics[this.localDeviceUuid]);
-        },
-        "consequence": function (R) {
-            this.componentsConfig = this.componentsDistribution[this.localDeviceUuid];
-            R.next();
-        }
-    });
-    R.register({
-        "name": 'end when local device is not present',
-        "condition": function (R) {
-            R.when(!this.proxemics[this.localDeviceUuid]);
-        },
-        "consequence": function (R) {
-            this.componentsConfig = this.defaultComponentsConfig;
-            R.stop();
-        }
-    });
-    R.register({
-        "name": 'dedicated view devices have priority',
-        "condition": function (R) {
-            R.when(!this.modules._.isEmpty(this.viewOnlyDevices));
-        },
-        "consequence": function (R) {
-            for (let deviceUuid in this.viewAndControlDevices) {
-                this.componentsDistribution[deviceUuid].view = false;
-            }
-            R.next();
-        }
-    });
-    R.register({
-        "name": 'dedicated control devices have priority',
-        "condition": function (R) {
-            R.when(!this.modules._.isEmpty(this.controlOnlyDevices));
-        },
-        "consequence": function (R) {
-            for (let deviceUuid in this.viewAndControlDevices) {
-                this.componentsDistribution[deviceUuid].control = false;
-            }
-            R.next();
-        }
-    });
-    const rules = R.toJSON();
-    fs.writeFileSync('node-rules.json', JSON.stringify(rules));
-    R.fromJSON(rules);
-    R.execute(facts, function (data) {
-        console.log("---- Node Rules ----");
-        console.log(data.componentsConfig);
-    });
-}
-
-async function rools(localDeviceUuid, instances, proxemicsData) {
-    //https://github.com/frankthelen/rools
-    //https://www.npmjs.com/package/rools
-    const { Rools, Rule } = require('rools');
-
-    const activeInstances = instances.filter(i => i.active);
-    const proxemics = proxemicsData.state;
-    const componentsDistribution = _.cloneDeep(proxemics);
-    const defaultComponentsConfig = {
-        view: false,
-        control: false
-    }
-    const facts = {
-        localDeviceUuid,
-        activeInstances,
-        proxemics,
-        componentsDistribution,
-        defaultComponentsConfig
+    const Result = function (result) {
+        this.result = result || -1;
     };
-    const ruleComputeDeviceTypeListsIfLocalDeviceIsPresent = new Rule({
-        name: 'Rule compute device type lists if local device is present',
-        when: facts => facts.proxemics[facts.localDeviceUuid],
-        then: (facts) => {
-            facts.viewAndControlDevices = _.pickBy(facts.proxemics, (caps, deviceUuid) => {
-                return caps.view === true && caps.control === true && _.some(activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-            facts.viewOnlyDevices = _.pickBy(facts.proxemics, (caps, deviceUuid) => {
-                return caps.view === true && caps.control === false && _.some(activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-            facts.controlOnlyDevices = _.pickBy(facts.proxemics, (caps, deviceUuid) => {
-                return caps.view === false && caps.control === true && _.some(activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-        },
+
+    const flow = nools.flow("Fibonacci Flow", function (flow) {
+        flow.rule("Recurse", [
+            ["not", Fibonacci, "f", "f.sequence == 1"],
+            [Fibonacci, "f1", "f1.sequence != 1"]
+        ], function (facts) {
+            var f1 = facts.f1;
+            var f2 = new Fibonacci(f1.sequence - 1);
+            this.assert(f2);
+        });
+
+        flow.rule("Bootstrap", [
+            Fibonacci, "f", "f.value == -1 && (f.sequence == 1 || f.sequence == 2)"
+        ], function (facts) {
+            var f = facts.f;
+            f.value = 1;
+            this.modify(f);
+        });
+
+        flow.rule("Calculate", [
+            [Fibonacci, "f1", "f1.value != -1", { sequence: "s1" }],
+            [Fibonacci, "f2", "f2.value != -1 && f2.sequence == s1 + 1", { sequence: "s2" }],
+            [Fibonacci, "f3", "f3.value == -1 && f3.sequence == s2 + 1"],
+            [Result, "r"]
+        ], function (facts) {
+            var f3 = facts.f3, f1 = facts.f1, f2 = facts.f2;
+            var v = f3.value = f1.value + facts.f2.value;
+            facts.r.result = v;
+            this.modify(f3);
+            this.retract(f1);
+        });
     });
-    const ruleEndWhenLocalDeviceIsPresent = new Rule({
-        name: 'end when local device is present',
-        when: facts => facts.proxemics[facts.localDeviceUuid],
-        then: (facts) => {
-            facts.componentsConfig = facts.componentsDistribution[facts.localDeviceUuid];
-        },
+
+    const r1 = new Result();
+    const session1 = flow.getSession(new Fibonacci(10), r1)
+    const s1 = new Date();
+    session1.match().then(function () {
+        console.log("%d [%dms]", r1.result, new Date - s1);
+        session1.dispose();
     });
-    const ruleWhenLocalDeviceIsNotPresent = new Rule({
-        name: 'end when local device is not present',
-        when: facts => !facts.proxemics[facts.localDeviceUuid],
-        then: (facts) => {
-            facts.componentsConfig = facts.defaultComponentsConfig
-        },
-    });
-    const ruleViewOnlyPriority = new Rule({
-        name: 'dedicated view devices have priority',
-        when: facts => !_.isEmpty(facts.viewOnlyDevices),
-        then: (facts) => {
-            for (let deviceUuid in facts.viewAndControlDevices) {
-                facts.componentsDistribution[deviceUuid].view = false;
-            }
-        },
-    });
-    const ruleControlOnlyPriority = new Rule({
-        name: 'dedicated control devices have priority',
-        when: facts => !_.isEmpty(facts.controlOnlyDevices),
-        then: (facts) => {
-            for (let deviceUuid in facts.viewAndControlDevices) {
-                facts.componentsDistribution[deviceUuid].control = false;
-            }
-        },
-    });
-    const rools = new Rools();
-    await rools.register([
-        ruleComputeDeviceTypeListsIfLocalDeviceIsPresent,
-        ruleEndWhenLocalDeviceIsPresent,
-        ruleWhenLocalDeviceIsNotPresent,
-        ruleViewOnlyPriority,
-        ruleControlOnlyPriority
-    ]);
-    await rools.evaluate(facts);
-    console.log("---- rools ----");
-    console.log(facts.componentsConfig);
 }
 
 function tauProlog(localDeviceUuid, instances, proxemics) {
@@ -439,16 +492,24 @@ function tauProlog(localDeviceUuid, instances, proxemics) {
     //https://www.npmjs.com/package/tau-prolog
     //https://github.com/jariazavalverde/tau-prolog/blob/master/examples/nodejs/fruit.js
     const pl = require("tau-prolog");
-    require("tau-prolog/modules/lists")(pl);
-    const session = pl.create(1000);
     console.log("---- Tau Prolog ----");
-}
+    require("tau-prolog/modules/lists")(pl);
 
-function nools(localDeviceUuid, instances, proxemics) {
-    const nools = require("nools");
-    //https://www.npmjs.com/package/nools
-    //https://github.com/noolsjs/nools
-    console.log("---- nools ----");
+    const session = pl.create(1000);
+    // Load the program
+    var program = fs.readFileSync(__dirname+'/shops.pl').toString();
+    session.consult(program);
+
+    // Get Node.js argument: nodejs ./script.js item
+    var item = 'bread';
+
+    // Query the goal
+    session.query("item(id(ItemID), name(" + item + ")), stock(item(ItemID), shop(ShopID), _, price(Price)), shop(id(ShopID), name(Shop), _).");
+
+    // Show answers
+    session.answers(x => {
+        console.log(pl.format_answer(x))
+    });
 }
 
 function main() {
@@ -531,10 +592,11 @@ function main() {
         "createdAt": new Date("2019-04-15T17:56:57.834Z")
     };
     classic(localDeviceUuid, instances, proxemics);
-    jsonRulesEngine(localDeviceUuid, instances, proxemics);
     //nodeRules(localDeviceUuid, instances, proxemics);
     //rools(localDeviceUuid, instances, proxemics);
-    //tauProlog(localDeviceUuid, instances, proxemics);
+    //jsonRulesEngine(localDeviceUuid, instances, proxemics);
+    //----[[ NOT IMPLEMENTING THE COMPONENT CONFIGURATION ALGORITHM ]]----//
     //nools(localDeviceUuid, instances, proxemics);
+    tauProlog(localDeviceUuid, instances, proxemics);
 }
 main();

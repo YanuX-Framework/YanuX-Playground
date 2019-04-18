@@ -9,7 +9,6 @@
   "license": "MIT",
   "description": "",
   "dependencies": {
-    "bspec": "^1.0.1",
     "json-rules-engine": "^2.3.3",
     "lodash": "^4.17.11",
     "node-rules": "^4.0.2",

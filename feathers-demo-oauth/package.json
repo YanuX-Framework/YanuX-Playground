@@ -39,15 +39,15 @@
     "compression": "^1.7.2",
     "cors": "^2.8.4",
     "feathers-nedb": "^4.0.1",
-    "helmet": "^3.12.1",
+    "helmet": "^3.18.0",
     "nedb": "^1.8.0",
     "passport-github": "^1.1.0",
     "serve-favicon": "^2.5.0",
     "winston": "^3.2.1"
   },
   "devDependencies": {
-    "eslint": "^4.19.1",
-    "mocha": "^5.2.0",
+    "eslint": "^5.16.0",
+    "mocha": "^6.1.4",
     "request": "^2.87.0",
     "request-promise": "^4.2.2"
   }

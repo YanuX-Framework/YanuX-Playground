@@ -9,7 +9,7 @@
   "license": "MIT",
   "description": "",
   "dependencies": {
-    "json-rules-engine": "^2.3.6",
+    "json-rules-engine": "^3.0.2",
     "lodash": "^4.17.11",
     "node-rules": "^4.0.2",
     "nools": "^0.4.4",

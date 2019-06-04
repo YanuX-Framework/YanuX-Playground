@@ -1,5 +1,7 @@
 const _ = require("lodash");
 const fs = require("fs");
+const RuleEngine = require("node-rules");
+
 
 class ObjectId {
     constructor(id) {
@@ -10,89 +12,103 @@ class ObjectId {
     }
 }
 
-function classic(localDeviceUuid, instances, proxemicsData) {
-    const activeInstances = instances.filter(i => i.active);
-    const proxemics = proxemicsData.state;
-    const defaultComponentsConfig = {
-        view: false,
-        control: false
-    }
-    const componentsDistribution = _.cloneDeep(proxemics);
-    let componentsConfig = defaultComponentsConfig;
-    if (proxemics[localDeviceUuid]) {
-        const viewAndControlDevices = _.pickBy(proxemics, (caps, deviceUuid) => {
-            return caps.view === true && caps.control === true && _.some(activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-        });
-        const viewOnlyDevices = _.pickBy(proxemics, (caps, deviceUuid) => {
-            return caps.view === true && caps.control === false && _.some(activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-        });
-        const controlOnlyDevices = _.pickBy(proxemics, (caps, deviceUuid) => {
-            return caps.view === false && caps.control === true && _.some(activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-        });
-        if (!_.isEmpty(viewOnlyDevices)) {
-            for (let deviceUuid in viewAndControlDevices) {
-                componentsDistribution[deviceUuid].view = false;
-            }
-        }
-        if (!_.isEmpty(controlOnlyDevices)) {
-            for (let deviceUuid in viewAndControlDevices) {
-                componentsDistribution[deviceUuid].control = false;
-            }
-        }
-        componentsConfig = componentsDistribution[localDeviceUuid];
-    }
-    console.log("---- Classic ----");
-    console.log(componentsConfig);
-}
-
-function nodeRules(localDeviceUuid, instances, proxemicsData) {
-    //https://github.com/mithunsatheesh/node-rules
-    //https://www.npmjs.com/package/node-rules
-    const RuleEngine = require("node-rules");
+function nodeRules(localDeviceUuid, instances, proxemicsData, restrictions) {
     const R = new RuleEngine();
     const activeInstances = instances.filter(i => i.active);
     const proxemics = proxemicsData.state;
-    const componentsDistribution = _.cloneDeep(proxemics);
-    const defaultComponentsConfig = {
-        view: false,
-        control: false
-    }
+
     const facts = {
         localDeviceUuid,
         activeInstances,
         proxemics,
-        componentsDistribution,
-        defaultComponentsConfig,
+        restrictions,
         modules: { _: require('lodash') }
     };
+
     R.register({
-        name: 'Rule compute device type lists if local device is present',
+        name: 'hide all components by default',
         condition: function (R) {
-            R.when(this.proxemics[this.localDeviceUuid]);
+            R.when(!this.defaultComponentsConfig);
         },
         consequence: function (R) {
-            this.viewAndControlDevices = this.modules._.pickBy(this.proxemics, (caps, deviceUuid) => {
-                return caps.view === true && caps.control === true && this.modules._.some(this.activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-            this.viewOnlyDevices = this.modules._.pickBy(this.proxemics, (caps, deviceUuid) => {
-                return caps.view === true && caps.control === false && this.modules._.some(this.activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-            this.controlOnlyDevices = this.modules._.pickBy(this.proxemics, (caps, deviceUuid) => {
-                return caps.view === false && caps.control === true && this.modules._.some(this.activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
+            this.defaultComponentsConfig = {};
+            Object.keys(restrictions).forEach(component => {
+                this.defaultComponentsConfig[component] = false;
+            })
             R.next();
         }
     });
+
     R.register({
-        name: 'end when local device is present',
+        name: 'start with the default components configuration',
         condition: function (R) {
-            R.when(this.proxemics[this.localDeviceUuid]);
+            R.when(this.defaultComponentsConfig && !this.componentsConfig);
         },
         consequence: function (R) {
-            this.componentsConfig = this.componentsDistribution[this.localDeviceUuid];
+            this.componentsConfig = this.defaultComponentsConfig;
             R.next();
         }
     });
+
+    R.register({
+        name: 'when local device is present',
+        condition: function (R) {
+            R.when(this.proxemics[this.localDeviceUuid] && !this.localDeviceCapabilities);
+        },
+        consequence: function (R) {
+            this.localDeviceCapabilities = this.activeInstances.find(instance => instance.device.deviceUuid === localDeviceUuid).device.capabilities;
+            R.next();
+        }
+    });
+
+    R.register({
+        name: 'when local device capabilities are available',
+        condition: function (R) {
+            R.when(this.localDeviceCapabilities);
+        },
+        consequence: function (R) {
+            const matchComponents = components => {
+                const [component, ...otherComponents] = components
+                if (component) {
+                    console.log('> Component:', component);
+                    const componentRestrictions = this.restrictions[component];
+                    this.componentsConfig[component] = matchRestriction(component, Object.keys(componentRestrictions))
+                    matchComponents(otherComponents);
+                }
+            }
+            const matchRestriction = (component, restrictions) => {
+                console.log('>> Restrictions:', restrictions);
+                return restrictions.every(r => matchCondition(this.restrictions[component][r], this.localDeviceCapabilities[r]));
+            }
+            const matchCondition = (condition, capability, operator) => {
+                if (this.modules._.isNull(operator)) {
+                    operator = 'AND';
+                }
+                if (condition === true && !this.modules._.isNull(this.localDeviceCapabilities.display)) {
+                    console.log('>>> Condition True:', condition, 'Capability:', capability);
+                    return true;
+                }
+                if (this.modules._.isArray(condition) && operator) {
+                    console.log('>>> Condition Array 1:', condition, 'Capability:', capability, 'Operator', operator);
+                    switch (operator) {
+                        case 'AND':
+                            return condition.every(c => matchCondition(c, capability, operator))
+                        case 'OR':
+                            return condition.some(c => matchCondition(c, capability, operator))
+                    }
+                }
+                if (this.modules._.isString(condition.operator) && this.modules._.isArray(condition.values)) {
+                    console.log('>>> Condition Array 2:', condition, 'Capability:', capability, 'Operator', operator);
+                    return matchCondition(condition.values, capability, condition.operator);
+                }
+                console.log('>>> Condition Else:', condition, 'Capability:', capability, 'Operator', operator);
+                return capability.includes(condition);
+            }
+            matchComponents(Object.keys(this.restrictions));
+            R.next();
+        }
+    });
+
     R.register({
         name: 'end when local device is not present',
         condition: function (R) {
@@ -103,412 +119,10 @@ function nodeRules(localDeviceUuid, instances, proxemicsData) {
             R.stop();
         }
     });
-    R.register({
-        name: 'dedicated view devices have priority',
-        condition: function (R) {
-            R.when(!this.modules._.isEmpty(this.viewOnlyDevices));
-        },
-        consequence: function (R) {
-            for (let deviceUuid in this.viewAndControlDevices) {
-                this.componentsDistribution[deviceUuid].view = false;
-            }
-            R.next();
-        }
-    });
-    R.register({
-        name: 'dedicated control devices have priority',
-        condition: function (R) {
-            R.when(!this.modules._.isEmpty(this.controlOnlyDevices));
-        },
-        consequence: function (R) {
-            for (let deviceUuid in this.viewAndControlDevices) {
-                this.componentsDistribution[deviceUuid].control = false;
-            }
-            R.next();
-        }
-    });
-    const rules = R.toJSON();
-    fs.writeFileSync('node-rules.json', JSON.stringify(rules));
-    R.fromJSON(rules);
+
     R.execute(facts, function (data) {
         console.log("---- Node Rules ----");
         console.log(data.componentsConfig);
-    });
-}
-
-async function rools(localDeviceUuid, instances, proxemicsData) {
-    //https://github.com/frankthelen/rools
-    //https://www.npmjs.com/package/rools
-    const { Rools, Rule } = require('rools');
-
-    const activeInstances = instances.filter(i => i.active);
-    const proxemics = proxemicsData.state;
-    const componentsDistribution = _.cloneDeep(proxemics);
-    const defaultComponentsConfig = {
-        view: false,
-        control: false
-    }
-    const facts = {
-        localDeviceUuid,
-        activeInstances,
-        proxemics,
-        componentsDistribution,
-        defaultComponentsConfig
-    };
-    const ruleComputeDeviceTypeListsIfLocalDeviceIsPresent = new Rule({
-        name: 'Rule compute device type lists if local device is present',
-        when: facts => facts.proxemics[facts.localDeviceUuid],
-        then: (facts) => {
-            facts.viewAndControlDevices = _.pickBy(facts.proxemics, (caps, deviceUuid) => {
-                return caps.view === true && caps.control === true && _.some(activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-            facts.viewOnlyDevices = _.pickBy(facts.proxemics, (caps, deviceUuid) => {
-                return caps.view === true && caps.control === false && _.some(activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-            facts.controlOnlyDevices = _.pickBy(facts.proxemics, (caps, deviceUuid) => {
-                return caps.view === false && caps.control === true && _.some(activeInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-        },
-    });
-    const ruleEndWhenLocalDeviceIsPresent = new Rule({
-        name: 'end when local device is present',
-        when: facts => facts.proxemics[facts.localDeviceUuid],
-        then: (facts) => {
-            facts.componentsConfig = facts.componentsDistribution[facts.localDeviceUuid];
-        },
-    });
-    const ruleWhenLocalDeviceIsNotPresent = new Rule({
-        name: 'end when local device is not present',
-        when: facts => !facts.proxemics[facts.localDeviceUuid],
-        then: (facts) => {
-            facts.componentsConfig = facts.defaultComponentsConfig
-        },
-    });
-    const ruleViewOnlyPriority = new Rule({
-        name: 'dedicated view devices have priority',
-        when: facts => !_.isEmpty(facts.viewOnlyDevices),
-        then: (facts) => {
-            for (let deviceUuid in facts.viewAndControlDevices) {
-                facts.componentsDistribution[deviceUuid].view = false;
-            }
-        },
-    });
-    const ruleControlOnlyPriority = new Rule({
-        name: 'dedicated control devices have priority',
-        when: facts => !_.isEmpty(facts.controlOnlyDevices),
-        then: (facts) => {
-            for (let deviceUuid in facts.viewAndControlDevices) {
-                facts.componentsDistribution[deviceUuid].control = false;
-            }
-        },
-    });
-    const rools = new Rools();
-    await rools.register([
-        ruleComputeDeviceTypeListsIfLocalDeviceIsPresent,
-        ruleEndWhenLocalDeviceIsPresent,
-        ruleWhenLocalDeviceIsNotPresent,
-        ruleViewOnlyPriority,
-        ruleControlOnlyPriority
-    ]);
-    await rools.evaluate(facts);
-    console.log("---- rools ----");
-    console.log(facts.componentsConfig);
-}
-
-function jsonRulesEngine(localDeviceUuid, instances, proxemicsData) {
-    //https://github.com/cachecontrol/json-rules-engine
-    //https://www.npmjs.com/package/json-rules-engine
-    //https://github.com/CacheControl/json-rules-engine/blob/master/docs/almanac.md
-    const { Engine } = require('json-rules-engine');
-    const engine = new Engine();
-
-    const activeInstances = instances.filter(i => i.active);
-    const proxemics = proxemicsData.state;
-    const componentsDistribution = _.cloneDeep(proxemics);
-    const defaultComponentsConfig = {
-        view: false,
-        control: false
-    }
-    const facts = {
-        localDeviceUuid,
-        activeInstances,
-        proxemics,
-        componentsDistribution,
-        defaultComponentsConfig
-    };
-    engine.addFact('viewAndControlDevices', function (params, almanac) {
-        return Promise.all([
-            almanac.factValue('proxemics'),
-            almanac.factValue('activeInstances')
-        ]).then(results => {
-            const fProxemics = results[0];
-            const fActiveInstances = results[1];
-            const viewAndControlDevices = _.pickBy(fProxemics, (caps, deviceUuid) => {
-                return caps.view === true && caps.control === true && _.some(fActiveInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-            if (_.isEmpty(viewAndControlDevices)) {
-                return { devices: null };
-            } else {
-                return { devices: viewAndControlDevices }
-            }
-        });
-    });
-    engine.addFact('viewOnlyDevices', function (params, almanac) {
-        return Promise.all([
-            almanac.factValue('proxemics'),
-            almanac.factValue('activeInstances')
-        ]).then(results => {
-            const fProxemics = results[0];
-            const fActiveInstances = results[1];
-            const viewOnlyDevices = _.pickBy(fProxemics, (caps, deviceUuid) => {
-                return caps.view === true && caps.control === false && _.some(fActiveInstances, instance => deviceUuid === instance.device.deviceUuid);
-            });
-            if (_.isEmpty(viewOnlyDevices)) {
-                return { devices: null };
-            } else {
-                return { devices: viewOnlyDevices }
-            }
-        });
-    });
-    engine.addFact('controlOnlyDevices', function (params, almanac) {
-        return Promise.all([
-            almanac.factValue('proxemics'),
-            almanac.factValue('activeInstances')
-        ]).then(results => {
-            const fProxemics = results[0];
-            const fActiveInstances = results[1];
-            const controlOnlyDevices = _.pickBy(fProxemics, (caps, deviceUuid) => {
-                return caps.view === false && caps.control === true && _.some(fActiveInstances, instance => deviceUuid === instance.device.deviceUuid);
-            })
-            if (_.isEmpty(controlOnlyDevices)) {
-                return { devices: null };
-            } else {
-                return { devices: controlOnlyDevices }
-            }
-        });
-    });
-    engine.addRule({
-        conditions: {
-            all: [{
-                fact: 'proxemics',
-                operator: 'notEqual',
-                path: '.' + localDeviceUuid,
-                value: undefined
-            }]
-        },
-        event: {  // define the event to fire when the conditions evaluate truthy
-            type: 'localDeviceIsPresent',
-        },
-        onSuccess: function (event, almanac) {
-            almanac.addRuntimeFact('localDeviceIsPresent', true) // track that the rule passed
-        },
-        onFailure: function (event, almanac) {
-            almanac.addRuntimeFact('localDeviceIsPresent', false) // track that the rule failed
-            almanac.factValue('defaultComponentsConfig').then(fDefaultComponentsConfig => {
-                almanac.addRuntimeFact('componentsConfig', fDefaultComponentsConfig)
-            })
-        },
-        priority: 3
-    });
-    engine.addRule({
-        conditions: {
-            all: [{
-                fact: 'localDeviceIsPresent',
-                operator: 'equal',
-                value: true
-            }, {
-                fact: 'viewOnlyDevices',
-                operator: 'notEqual',
-                path: '.devices',
-                value: null
-            }]
-        },
-        event: {  // define the event to fire when the conditions evaluate truthy
-            type: 'viewOnlyDevicesExist',
-        },
-        onSuccess: function (event, almanac) {
-            Promise.all([
-                almanac.factValue('localDeviceUuid'),
-                almanac.factValue('viewAndControlDevices', {}, '.devices'),
-                almanac.factValue('componentsDistribution')
-            ]).then(results => {
-                const fLocalDeviceUuid = results[0];
-                const fViewAndControlDevices = results[1];
-                const fComponentsDistribution = results[2];
-                for (let deviceUuid in fViewAndControlDevices) {
-                    fComponentsDistribution[deviceUuid].view = false;
-                }
-                almanac.addRuntimeFact('componentsConfig', fComponentsDistribution[fLocalDeviceUuid])
-            }).catch(err => console.error(err));
-        },
-        priority: 2
-    });
-    engine.addRule({
-        conditions: {
-            all: [{
-                fact: 'localDeviceIsPresent',
-                operator: 'equal',
-                value: true
-            }, {
-                fact: 'controlOnlyDevices',
-                operator: 'notEqual',
-                path: '.devices',
-                value: null
-            }]
-        },
-        event: {  // define the event to fire when the conditions evaluate truthy
-            type: 'controlOnlyDevicesExist',
-        },
-        onSuccess: function (event, almanac) {
-            Promise.all([
-                almanac.factValue('localDeviceUuid'),
-                almanac.factValue('viewAndControlDevices', {}, '.devices'),
-                almanac.factValue('componentsDistribution')
-            ]).then(results => {
-                const fLocalDeviceUuid = results[0];
-                const fViewAndControlDevices = results[1];
-                const fComponentsDistribution = results[2];
-                for (let deviceUuid in fViewAndControlDevices) {
-                    fComponentsDistribution[deviceUuid].control = false;
-                }
-                almanac.addRuntimeFact('componentsConfig', fComponentsDistribution[fLocalDeviceUuid])
-            }).catch(err => console.error(err));
-        },
-        priority: 2
-    });
-
-    engine.addRule({
-        conditions: {
-            all: [{
-                fact: 'localDeviceIsPresent',
-                operator: 'equal',
-                value: true
-            }, {
-                fact: 'componentsConfig',
-                operator: 'notEqual',
-                value: undefined
-            }]
-        },
-        event: {  // define the event to fire when the conditions evaluate truthy
-            type: 'componentsConfig',
-            params: {
-                defaultConfig: false
-            }
-        },
-        priority: 1 // lower priority ensures this is run AFTER its predecessor
-    });
-
-    engine.addRule({
-        conditions: {
-            all: [{
-                fact: 'localDeviceIsPresent',
-                operator: 'equal',
-                value: false
-            }, {
-                fact: 'componentsConfig',
-                operator: 'notEqual',
-                value: undefined
-            }]
-        },
-        event: {  // define the event to fire when the conditions evaluate truthy
-            type: 'componentsConfig',
-            params: {
-                defaultConfig: true
-            }
-        }
-    });
-
-    console.log("---- JSON Rules Engine ----");
-    engine.run(facts).then(events => { // run() returns events with truthy conditions
-        console.log('Engine Finished');
-    });
-    engine.on('success', (event, almanac, ruleResult) => {
-        if (event.type === 'componentsConfig') {
-            console.log(ruleResult.conditions.all.find(condition => condition.fact === 'componentsConfig').factResult)
-        }
-    });
-    engine.rules.forEach((rule, index) => {
-        fs.writeFileSync('json-rules-engine-' + index + '.json', rule.toJSON());
-    });
-}
-
-function nools(localDeviceUuid, instances, proxemics) {
-    //https://www.npmjs.com/package/nools
-    //https://github.com/noolsjs/nools
-    console.log("---- nools ----");
-    const nools = require("nools");
-    const Fibonacci = function (sequence, value) {
-        this.sequence = sequence;
-        this.value = value || -1;
-    };
-    const Result = function (result) {
-        this.result = result || -1;
-    };
-
-    const flow = nools.flow("Fibonacci Flow", function (flow) {
-        flow.rule("Recurse", [
-            ["not", Fibonacci, "f", "f.sequence == 1"],
-            [Fibonacci, "f1", "f1.sequence != 1"]
-        ], function (facts) {
-            var f1 = facts.f1;
-            var f2 = new Fibonacci(f1.sequence - 1);
-            this.assert(f2);
-        });
-
-        flow.rule("Bootstrap", [
-            Fibonacci, "f", "f.value == -1 && (f.sequence == 1 || f.sequence == 2)"
-        ], function (facts) {
-            var f = facts.f;
-            f.value = 1;
-            this.modify(f);
-        });
-
-        flow.rule("Calculate", [
-            [Fibonacci, "f1", "f1.value != -1", { sequence: "s1" }],
-            [Fibonacci, "f2", "f2.value != -1 && f2.sequence == s1 + 1", { sequence: "s2" }],
-            [Fibonacci, "f3", "f3.value == -1 && f3.sequence == s2 + 1"],
-            [Result, "r"]
-        ], function (facts) {
-            var f3 = facts.f3, f1 = facts.f1, f2 = facts.f2;
-            var v = f3.value = f1.value + facts.f2.value;
-            facts.r.result = v;
-            this.modify(f3);
-            this.retract(f1);
-        });
-    });
-
-    const r1 = new Result();
-    const session1 = flow.getSession(new Fibonacci(10), r1)
-    const s1 = new Date();
-    session1.match().then(function () {
-        console.log("%d [%dms]", r1.result, new Date - s1);
-        session1.dispose();
-    });
-}
-
-function tauProlog(localDeviceUuid, instances, proxemics) {
-    //http://tau-prolog.org/
-    //https://github.com/jariazavalverde/tau-prolog
-    //https://www.npmjs.com/package/tau-prolog
-    //https://github.com/jariazavalverde/tau-prolog/blob/master/examples/nodejs/fruit.js
-    const pl = require("tau-prolog");
-    console.log("---- Tau Prolog ----");
-    require("tau-prolog/modules/lists")(pl);
-
-    const session = pl.create(1000);
-    // Load the program
-    var program = fs.readFileSync(__dirname+'/shops.pl').toString();
-    session.consult(program);
-
-    // Get Node.js argument: nodejs ./script.js item
-    var item = 'bread';
-
-    // Query the goal
-    session.query("item(id(ItemID), name(" + item + ")), stock(item(ItemID), shop(ShopID), _, price(Price)), shop(id(ShopID), name(Shop), _).");
-
-    // Show answers
-    session.answers(x => {
-        console.log(pl.format_answer(x))
     });
 }
 
@@ -532,7 +146,26 @@ function main() {
                 "deviceUuid": "3d42affa-3685-47f2-97d0-bd4ff46de5c6",
                 "capabilities": {
                     "view": true,
-                    "control": true
+                    "control": true,
+                    "display": {
+                        "resolution": [1920, 1080],
+                        "pixelDensity": 96,
+                        "bitDepth": 24,
+                        "size": [481, 271],
+                        "refreshRate": 60
+                    },
+                    "speakers": {
+                        "type": "loadspeaker",
+                        "channels": 2,
+                    },
+                    "camera": {
+                        "resolution": [1280, 720],
+                    },
+                    "microphone": {
+                        "channels": 1,
+                    },
+                    "input": ["keyboard", "mouse"],
+                    "sensors": []
                 },
                 "user": new ObjectId("5cb4c3b2eb479c2e46a785d7"),
                 "createdAt": new Date("2019-04-15T17:49:20.145Z"),
@@ -561,7 +194,22 @@ function main() {
                 "deviceUuid": "9ab8e750-bc1e-11e8-a769-3f2e91eebf08",
                 "capabilities": {
                     "view": true,
-                    "control": false
+                    "control": true,
+                    "display": {
+                        "resolution": [1080, 2248],
+                        "pixelDensity": 402,
+                        "size": [154.9, 74.8],
+                        "refreshRate": 60
+                    },
+                    "speakers": {
+                        "type": "loudspeaker",
+                        "channels": 1,
+                    },
+                    "camera": {
+                        "resolution": [4032, 3024],
+                    },
+                    "input": ["keyboard", "mouse"],
+                    "sensors": []
                 },
                 "user": new ObjectId("5cb4c3b2eb479c2e46a785d7"),
                 "createdAt": new Date("2019-04-15T17:47:30.957Z"),
@@ -591,12 +239,71 @@ function main() {
         "updatedAt": new Date("2019-04-15T17:56:57.834Z"),
         "createdAt": new Date("2019-04-15T17:56:57.834Z")
     };
-    classic(localDeviceUuid, instances, proxemics);
-    //nodeRules(localDeviceUuid, instances, proxemics);
-    //rools(localDeviceUuid, instances, proxemics);
-    //jsonRulesEngine(localDeviceUuid, instances, proxemics);
-    //----[[ NOT IMPLEMENTING THE COMPONENT CONFIGURATION ALGORITHM ]]----//
-    //nools(localDeviceUuid, instances, proxemics);
-    tauProlog(localDeviceUuid, instances, proxemics);
+    const restrictions = {
+        "viewer-form": {
+            "display": true,
+            "input": {
+                "operator": "OR",
+                "values": [{
+                    "operator": "AND",
+                    "values": ["keyboard", "mouse"]
+                }, "touchscreen"]
+            }
+        }/*,
+        "player": {
+            "display": {
+                "operator": "AND",
+                "values": {
+                    "resolution": {
+                        "operator": ">=",
+                        "value": [1280, null],
+                        "enforce": true
+                    },
+                    "size": {
+                        "operator": ">=",
+                        "value": [160, 90],
+                        "enforce": false
+                    },
+                    "pixelRatio": {
+                        "operator": "NOT",
+                        "values": {
+                            "operator": ">",
+                            "value": 2.0
+                        },
+                        "enforce": false
+                    }
+                }
+            },
+            "speakers": {
+                "channels": {
+                    "operator": "AND",
+                    "values": [
+                        {
+                            "operator": ">=",
+                            "values": 2,
+                            "enforce": false
+                        },
+                        {
+                            "operator": ">=",
+                            "values": 1,
+                            "enforce": true
+                        }
+                    ]
+                }
+            }
+        },
+        "controls": {
+            "display": true,
+            "input": {
+                "operator": "OR",
+                "values": [{
+                    "operator": "AND",
+                    "values": ["keyboard", "pointing device"]
+                },
+                    "touchscreen"]
+            }
+        }*/
+    };
+    nodeRules(localDeviceUuid, instances, proxemics, restrictions);
 }
 main();

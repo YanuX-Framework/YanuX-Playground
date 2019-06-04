@@ -1,1 +1,0 @@
-{"conditions":{"priority":1,"all":[{"operator":"notEqual","fact":"proxemics","path":".3d42affa-3685-47f2-97d0-bd4ff46de5c6"}]},"priority":3,"event":{"type":"localDeviceIsPresent"}}

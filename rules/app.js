@@ -56,7 +56,7 @@ function nodeRules(localDeviceUuid, instances, proxemicsData, restrictions) {
             R.when(this.proxemics[this.localDeviceUuid] && !this.localDeviceCapabilities);
         },
         consequence: function (R) {
-            this.localDeviceCapabilities = this.activeInstances.find(instance => instance.device.deviceUuid === localDeviceUuid).device.capabilities;
+            this.localDeviceCapabilities = this.proxemics[localDeviceUuid];
             R.next();
         }
     });
@@ -81,28 +81,92 @@ function nodeRules(localDeviceUuid, instances, proxemicsData, restrictions) {
                 return restrictions.every(r => matchCondition(this.restrictions[component][r], this.localDeviceCapabilities[r]));
             }
             const matchCondition = (condition, capability, operator) => {
-                if (this.modules._.isNull(operator)) {
+                if (!operator) {
                     operator = 'AND';
                 }
                 if (condition === true && !this.modules._.isNull(this.localDeviceCapabilities.display)) {
                     console.log('>>> Condition True:', condition, 'Capability:', capability);
                     return true;
                 }
-                if (this.modules._.isArray(condition) && operator) {
+                if (this.modules._.isArray(condition)) {
                     console.log('>>> Condition Array 1:', condition, 'Capability:', capability, 'Operator', operator);
                     switch (operator) {
+                        case 'OR': return condition.some(c => matchCondition(c, capability, operator));
                         case 'AND':
-                            return condition.every(c => matchCondition(c, capability, operator))
-                        case 'OR':
-                            return condition.some(c => matchCondition(c, capability, operator))
+                        case 'NOT':
+                        default: return condition.every(c => matchCondition(c, capability, operator))
                     }
                 }
-                if (this.modules._.isString(condition.operator) && this.modules._.isArray(condition.values)) {
+                if (this.modules._.isArray(condition.values) && this.modules._.isString(condition.operator)) {
                     console.log('>>> Condition Array 2:', condition, 'Capability:', capability, 'Operator', operator);
                     return matchCondition(condition.values, capability, condition.operator);
                 }
-                console.log('>>> Condition Else:', condition, 'Capability:', capability, 'Operator', operator);
-                return capability.includes(condition);
+                if (this.modules._.isObject(condition) && this.modules._.isString(operator)) {
+                    console.log('>>> Condition Object 1:', condition, 'Capability:', capability, 'Operator', operator);
+                    const processConditionEntries = c => {
+                        const entryKey = c[0];
+                        const entryValue = c[1];
+                        const capabilityValue = this.modules._.flattenDeep([capability[entryKey]]);
+                        const conditionValue = this.modules._.flattenDeep([entryValue.value]);
+                        switch (entryValue.operator) {
+                            case '=':
+                                return conditionValue.every((cn, i) => capabilityValue[i] == cn);
+                            case '!':
+                                console.log('>>>>>: !');
+                                return conditionValue.every((cn, i) => capabilityValue[i] != cn);
+                            case '>':
+                                console.log('>>>>: >');
+                                return conditionValue.every((cn, i) => capabilityValue[i] > cn);
+                            case '>=':
+                                console.log('>>>>: >=');
+                                return conditionValue.every((cn, i) => capabilityValue[i] >= cn);
+                            case '<':
+                                console.log('>>>>: <');
+                                return conditionValue.every((cn, i) => capabilityValue[i] < cn);
+                            case '<=':
+                                console.log('>>>>: <=');
+                                return conditionValue.every((cn, i) => capabilityValue[i] <= cn);
+                            case 'AND':
+                                console.log('>>>>: AND');
+                                return entryValue.values.every(v => {
+                                    const cond = {};
+                                    cond[entryKey] = v;
+                                    return matchCondition(cond, capability)
+                                });
+                            case 'OR':
+                                console.log('>>>>: OR');
+                                return entryValue.values.some(v => {
+                                    const cond = {};
+                                    cond[entryKey] = v;
+                                    return matchCondition(cond, capability)
+                                });
+                            case 'NOT':
+                                console.log('>>>>: NOT');
+                                return entryValue.values.every(v => {
+                                    const cond = {};
+                                    cond[entryKey] = v;
+                                    return !matchCondition(cond, capability)
+                                });
+                            default:
+                                console.log('>>>>: DEFAULT');
+                                return entryValue.every(v => {
+                                    const cond = {};
+                                    cond[entryKey] = v;
+                                    return matchCondition(cond, capability)
+                                });
+                        }
+                    }
+                    switch (operator) {
+                        case 'OR': return Object.entries(condition).some(processConditionEntries);
+                        case 'AND':
+                        case 'NOT':
+                        default: return Object.entries(condition).every(processConditionEntries);
+                    }
+                }
+                if (this.modules._.isArray(capability)) {
+                    console.log('>>> Condition Array Capability:', condition, 'Capability:', capability, 'Operator', operator);
+                    return capability.includes(condition);
+                }
             }
             matchComponents(Object.keys(this.restrictions));
             R.next();
@@ -144,29 +208,6 @@ function main() {
                 ],
                 "brokerName": "YanuX-Broker",
                 "deviceUuid": "3d42affa-3685-47f2-97d0-bd4ff46de5c6",
-                "capabilities": {
-                    "view": true,
-                    "control": true,
-                    "display": {
-                        "resolution": [1920, 1080],
-                        "pixelDensity": 96,
-                        "bitDepth": 24,
-                        "size": [481, 271],
-                        "refreshRate": 60
-                    },
-                    "speakers": {
-                        "type": "loadspeaker",
-                        "channels": 2,
-                    },
-                    "camera": {
-                        "resolution": [1280, 720],
-                    },
-                    "microphone": {
-                        "channels": 1,
-                    },
-                    "input": ["keyboard", "mouse"],
-                    "sensors": []
-                },
                 "user": new ObjectId("5cb4c3b2eb479c2e46a785d7"),
                 "createdAt": new Date("2019-04-15T17:49:20.145Z"),
                 "updatedAt": new Date("2019-04-15T18:01:02.481Z"),
@@ -192,25 +233,6 @@ function main() {
                 ],
                 "brokerName": "YanuX-Broker",
                 "deviceUuid": "9ab8e750-bc1e-11e8-a769-3f2e91eebf08",
-                "capabilities": {
-                    "view": true,
-                    "control": true,
-                    "display": {
-                        "resolution": [1080, 2248],
-                        "pixelDensity": 402,
-                        "size": [154.9, 74.8],
-                        "refreshRate": 60
-                    },
-                    "speakers": {
-                        "type": "loudspeaker",
-                        "channels": 1,
-                    },
-                    "camera": {
-                        "resolution": [4032, 3024],
-                    },
-                    "input": ["keyboard", "mouse"],
-                    "sensors": []
-                },
                 "user": new ObjectId("5cb4c3b2eb479c2e46a785d7"),
                 "createdAt": new Date("2019-04-15T17:47:30.957Z"),
                 "updatedAt": new Date("2019-04-15T17:47:30.957Z"),
@@ -229,11 +251,45 @@ function main() {
         "state": {
             "3d42affa-3685-47f2-97d0-bd4ff46de5c6": {
                 "view": true,
-                "control": true
+                "control": true,
+                "display": {
+                    "resolution": [1920, 1080],
+                    "pixelDensity": 96,
+                    "bitDepth": 24,
+                    "size": [481, 271],
+                    "refreshRate": 60
+                },
+                "speakers": {
+                    "type": "loadspeaker",
+                    "channels": 2,
+                },
+                "camera": {
+                    "resolution": [1280, 720],
+                },
+                "microphone": {
+                    "channels": 1,
+                },
+                "input": ["keyboard", "mouse"],
+                "sensors": []
             },
             "9ab8e750-bc1e-11e8-a769-3f2e91eebf08": {
                 "view": true,
-                "control": false
+                "control": false,
+                "display": {
+                    "resolution": [1080, 2248],
+                    "pixelDensity": 402,
+                    "size": [154.9, 74.8],
+                    "refreshRate": 60
+                },
+                "speakers": {
+                    "type": "loudspeaker",
+                    "channels": 1,
+                },
+                "camera": {
+                    "resolution": [4032, 3024],
+                },
+                "input": ["keyboard", "mouse"],
+                "sensors": []
             }
         },
         "updatedAt": new Date("2019-04-15T17:56:57.834Z"),
@@ -249,60 +305,41 @@ function main() {
                     "values": ["keyboard", "mouse"]
                 }, "touchscreen"]
             }
-        }/*,
+        },
         "player": {
             "display": {
                 "operator": "AND",
-                "values": {
+                "values": [{
                     "resolution": {
                         "operator": ">=",
                         "value": [1280, null],
-                        "enforce": true
                     },
                     "size": {
                         "operator": ">=",
                         "value": [160, 90],
-                        "enforce": false
                     },
-                    "pixelRatio": {
+                    "pixelDensity": {
                         "operator": "NOT",
-                        "values": {
+                        "values": [{
                             "operator": ">",
-                            "value": 2.0
-                        },
-                        "enforce": false
-                    }
-                }
+                            "value": 150
+                        }]
+                    },
+                }]
             },
             "speakers": {
-                "channels": {
-                    "operator": "AND",
-                    "values": [
-                        {
-                            "operator": ">=",
-                            "values": 2,
-                            "enforce": false
-                        },
-                        {
-                            "operator": ">=",
-                            "values": 1,
-                            "enforce": true
-                        }
-                    ]
-                }
+                "channels": [
+                    {
+                        "operator": ">=",
+                        "value": 2,
+                    },
+                    {
+                        "operator": ">=",
+                        "value": 1,
+                    }
+                ]
             }
-        },
-        "controls": {
-            "display": true,
-            "input": {
-                "operator": "OR",
-                "values": [{
-                    "operator": "AND",
-                    "values": ["keyboard", "pointing device"]
-                },
-                    "touchscreen"]
-            }
-        }*/
+        }
     };
     nodeRules(localDeviceUuid, instances, proxemics, restrictions);
 }

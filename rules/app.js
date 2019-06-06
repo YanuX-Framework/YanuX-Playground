@@ -67,109 +67,102 @@ function nodeRules(localDeviceUuid, instances, proxemicsData, restrictions) {
             R.when(this.localDeviceCapabilities);
         },
         consequence: function (R) {
-            const matchComponents = components => {
-                const [component, ...otherComponents] = components
-                if (component) {
-                    console.log('> Component:', component);
-                    const componentRestrictions = this.restrictions[component];
-                    this.componentsConfig[component] = matchRestriction(component, Object.keys(componentRestrictions))
-                    matchComponents(otherComponents);
+            const matchComponents = (component, componentRestrictions, deviceCapabilities, strictMatching) => {
+                if (strictMatching === undefined) {
+                    strictMatching = true;
                 }
-            }
-            const matchRestriction = (component, restrictions) => {
-                console.log('>> Restrictions:', restrictions);
-                return restrictions.every(r => matchCondition(this.restrictions[component][r], this.localDeviceCapabilities[r]));
-            }
-            const matchCondition = (condition, capability, operator) => {
-                if (!operator) {
-                    operator = 'AND';
-                }
-                if (condition === true && !this.modules._.isNull(this.localDeviceCapabilities.display)) {
-                    console.log('>>> Condition True:', condition, 'Capability:', capability);
-                    return true;
-                }
-                if (this.modules._.isArray(condition)) {
-                    console.log('>>> Condition Array 1:', condition, 'Capability:', capability, 'Operator', operator);
-                    switch (operator) {
-                        case 'OR': return condition.some(c => matchCondition(c, capability, operator));
-                        case 'AND':
-                        case 'NOT':
-                        default: return condition.every(c => matchCondition(c, capability, operator))
-                    }
-                }
-                if (this.modules._.isArray(condition.values) && this.modules._.isString(condition.operator)) {
-                    console.log('>>> Condition Array 2:', condition, 'Capability:', capability, 'Operator', operator);
-                    return matchCondition(condition.values, capability, condition.operator);
-                }
-                if (this.modules._.isObject(condition) && this.modules._.isString(operator)) {
-                    console.log('>>> Condition Object 1:', condition, 'Capability:', capability, 'Operator', operator);
-                    const processConditionEntries = c => {
-                        const entryKey = c[0];
-                        const entryValue = c[1];
-                        const capabilityValue = this.modules._.flattenDeep([capability[entryKey]]);
-                        const conditionValue = this.modules._.flattenDeep([entryValue.value]);
-                        switch (entryValue.operator) {
-                            case '=':
-                                return conditionValue.every((cn, i) => capabilityValue[i] == cn);
-                            case '!':
-                                console.log('>>>>>: !');
-                                return conditionValue.every((cn, i) => capabilityValue[i] != cn);
-                            case '>':
-                                console.log('>>>>: >');
-                                return conditionValue.every((cn, i) => capabilityValue[i] > cn);
-                            case '>=':
-                                console.log('>>>>: >=');
-                                return conditionValue.every((cn, i) => capabilityValue[i] >= cn);
-                            case '<':
-                                console.log('>>>>: <');
-                                return conditionValue.every((cn, i) => capabilityValue[i] < cn);
-                            case '<=':
-                                console.log('>>>>: <=');
-                                return conditionValue.every((cn, i) => capabilityValue[i] <= cn);
-                            case 'AND':
-                                console.log('>>>>: AND');
-                                return entryValue.values.every(v => {
-                                    const cond = {};
-                                    cond[entryKey] = v;
-                                    return matchCondition(cond, capability)
-                                });
-                            case 'OR':
-                                console.log('>>>>: OR');
-                                return entryValue.values.some(v => {
-                                    const cond = {};
-                                    cond[entryKey] = v;
-                                    return matchCondition(cond, capability)
-                                });
-                            case 'NOT':
-                                console.log('>>>>: NOT');
-                                return entryValue.values.every(v => {
-                                    const cond = {};
-                                    cond[entryKey] = v;
-                                    return !matchCondition(cond, capability)
-                                });
-                            default:
-                                console.log('>>>>: DEFAULT');
-                                return entryValue.every(v => {
-                                    const cond = {};
-                                    cond[entryKey] = v;
-                                    return matchCondition(cond, capability)
-                                });
+                const matchCondition = (condition, capability) => {
+                    const matchConditionAux = (condition, operator) => {
+                        if (!operator) {
+                            operator = 'AND';
                         }
+                        if (condition === true && !this.modules._.isNull(this.localDeviceCapabilities.display)) {
+                            console.log('>>> Condition True:', condition, 'Capability:', capability);
+                            return true;
+                        }
+                        if (this.modules._.isArray(condition)) {
+                            console.log('>>> Condition Array:', condition, 'Capability:', capability, 'Operator:', operator);
+                            switch (operator) {
+                                case 'OR': return condition.some(c => matchConditionAux(c, operator));
+                                case 'AND':
+                                case 'NOT':
+                                default: return condition.every(c => matchConditionAux(c, operator))
+                            }
+                        }
+                        if (this.modules._.isArray(condition.values) && this.modules._.isString(condition.operator)) {
+                            console.log('>>> Condition - Values Array & Operator:', condition, 'Capability:', capability, 'Operator:', operator);
+                            return matchConditionAux(condition.values, condition.operator);
+                        }
+                        if (this.modules._.isObject(condition) && this.modules._.isString(operator)) {
+                            console.log('>>> Condition - Object Operator:', condition, 'Capability:', capability, 'Operator:', operator);
+                            const processConditionEntries = ([entryKey, entryValue]) => {
+                                const capabilityValue = this.modules._.flattenDeep([capability[entryKey]]);
+                                const conditionValue = this.modules._.flattenDeep([entryValue.value]);
+                                const enforce = entryValue.enforce === undefined ? true : entryValue.enforce;
+                                let fallback = false;
+                                if (enforce === false && strictMatching) {
+                                    fallback = !Object.keys(this.proxemics).filter(d => d !== this.localDeviceUuid).some(d => {
+                                        return matchComponents(component, componentRestrictions, this.proxemics[d], false);
+                                    });
+                                    console.log('>>>>>> Non enforcing condition! Fallback: ', fallback);
+                                }
+                                switch (entryValue.operator) {
+                                    case '=':
+                                        return conditionValue.every((cn, i) => capabilityValue[i] == cn) || fallback;
+                                    case '!':
+                                        console.log('>>>>>: !');
+                                        return conditionValue.every((cn, i) => capabilityValue[i] != cn) || fallback;
+                                    case '>':
+                                        console.log('>>>>: >');
+                                        return conditionValue.every((cn, i) => capabilityValue[i] > cn) || fallback;
+                                    case '>=':
+                                        console.log('>>>>: >=');
+                                        return conditionValue.every((cn, i) => capabilityValue[i] >= cn) || fallback;
+                                    case '<':
+                                        console.log('>>>>: <');
+                                        return conditionValue.every((cn, i) => capabilityValue[i] < cn) || fallback;
+                                    case '<=':
+                                        console.log('>>>>: <=');
+                                        return conditionValue.every((cn, i) => capabilityValue[i] <= cn) || fallback;
+                                    case 'AND':
+                                        console.log('>>>>: AND');
+                                        return entryValue.values.every(v => matchConditionAux({ [entryKey]: v })) || fallback;
+                                    case 'OR':
+                                        console.log('>>>>: OR');
+                                        return entryValue.values.some(v => matchConditionAux({ [entryKey]: v })) || fallback;
+                                    case 'NOT':
+                                        console.log('>>>>: NOT');
+                                        return entryValue.values.every(v => !matchConditionAux({ [entryKey]: v })) || fallback;
+                                    default:
+                                        console.log('>>>>: DEFAULT');
+                                        return entryValue.every(v => matchConditionAux({ [entryKey]: v })) || fallback;
+                                }
+                            }
+                            switch (operator) {
+                                case 'OR': return Object.entries(condition).some(processConditionEntries);
+                                case 'AND':
+                                case 'NOT':
+                                default: return Object.entries(condition).every(processConditionEntries);
+                            }
+                        }
+                        if (this.modules._.isArray(capability)) {
+                            console.log('>>> Condition - Match Capability Array:', condition, 'Capability:', capability, 'Operator', operator);
+                            return capability.includes(condition);
+                        }
+                        return false;
                     }
-                    switch (operator) {
-                        case 'OR': return Object.entries(condition).some(processConditionEntries);
-                        case 'AND':
-                        case 'NOT':
-                        default: return Object.entries(condition).every(processConditionEntries);
-                    }
+                    return matchConditionAux(condition);
                 }
-                if (this.modules._.isArray(capability)) {
-                    console.log('>>> Condition Array Capability:', condition, 'Capability:', capability, 'Operator', operator);
-                    return capability.includes(condition);
-                }
+                console.log('> Component:', component);
+                return Object.entries(componentRestrictions).every(([type, condition]) => {
+                    console.log('>> Restrictions:', type);
+                    return matchCondition(condition, deviceCapabilities[type])
+                });
             }
-            matchComponents(Object.keys(this.restrictions));
-            R.next();
+            Object.entries(this.restrictions).forEach(([component, componentRestrictions]) => {
+                this.componentsConfig[component] = matchComponents(component, componentRestrictions, this.localDeviceCapabilities);
+            });
+            R.stop();
         }
     });
 
@@ -260,7 +253,7 @@ function main() {
                     "refreshRate": 60
                 },
                 "speakers": {
-                    "type": "loadspeaker",
+                    "type": "loudspeaker",
                     "channels": 2,
                 },
                 "camera": {
@@ -275,7 +268,7 @@ function main() {
             "9ab8e750-bc1e-11e8-a769-3f2e91eebf08": {
                 "view": true,
                 "control": false,
-                "display": {
+                /*"display": {
                     "resolution": [1080, 2248],
                     "pixelDensity": 402,
                     "size": [154.9, 74.8],
@@ -287,6 +280,25 @@ function main() {
                 },
                 "camera": {
                     "resolution": [4032, 3024],
+                },
+                "input": ["keyboard", "mouse"],
+                "sensors": []*/
+                "display": {
+                    "resolution": [1920, 1080],
+                    "pixelDensity": 96,
+                    "bitDepth": 24,
+                    "size": [481, 271],
+                    "refreshRate": 60
+                },
+                "speakers": {
+                    "type": "loudspeaker",
+                    "channels": 1,
+                },
+                "camera": {
+                    "resolution": [1280, 720],
+                },
+                "microphone": {
+                    "channels": 1,
                 },
                 "input": ["keyboard", "mouse"],
                 "sensors": []
@@ -331,7 +343,8 @@ function main() {
                 "channels": [
                     {
                         "operator": ">=",
-                        "value": 2,
+                        "value": 3,
+                        "enforce": false
                     },
                     {
                         "operator": ">=",

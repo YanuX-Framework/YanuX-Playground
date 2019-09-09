@@ -5,14 +5,15 @@ const getCapabilities = async () => {
     webPreferences: {
       nodeIntegration: true
     },
+    switches: {
+      'ignore-certificate-errors': true
+    }
   });
   const bounds = nm
-    .goto('https://example.com/')
+    .goto('https://albuquerques.net/yanux/desktopclient/capabilities/')
     .evaluate(async () => {
       const electron = require('electron');
-      const capabilities = {
-        debug: {}
-      };
+      const capabilities = { debug: {} };
 
       const displays = electron.screen.getAllDisplays()
       //capabilities.debug.displays = displays;
@@ -37,39 +38,68 @@ const getCapabilities = async () => {
         return { type, size, orientation, resolution, bitDepth, pixelDensity, pixelRatio, virtualResolution }
       });
 
-      const mediaDevices = await navigator.mediaDevices.enumerateDevices();
+      const audioCtx = new AudioContext();
+      capabilities.speakers = {
+        type: 'unknown',
+        channels: audioCtx.destination.maxChannelCount,
+        samplingRate: audioCtx.sampleRate
+      }
+      await audioCtx.close();
 
-      const audioOutputDevices = mediaDevices.filter(device => device.kind === 'audiooutput');
-      if(audioOutputDevices.length > 0) {
-        const audioCtx = new window.AudioContext();
-        capabilities.speakers = {
-          type: 'unknown',
-          channels: audioCtx.destination.maxChannelCount,
-          samplingRate: audioCtx.sampleRate
-        }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: { ideal: 32 },
+            sampleRate: { ideal: 192000 },
+            sampleSize: { ideal: 64 },
+          }
+        });
+        capabilities.microphone = stream.getTracks().map(function (track) {
+          const trackSettings = track.getSettings();
+          const microphone = {
+            channels: trackSettings.channelCount ? trackSettings.channelCount : 1,
+            bitDepth: trackSettings.sampleSize,
+            samplingRate: trackSettings.sampleRate
+          }
+          track.stop();
+          return microphone;
+        });
+      } catch (e) { capabilities.debug.microphone = e.toString(); }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 4096 },
+            height: { ideal: 4096 },
+            frameRate: { ideal: 1024 }
+          }
+        });
+        capabilities.camera = stream.getTracks().map(function (track) {
+          const trackSettings = track.getSettings();
+          const camera = {
+            type: "webcam",
+            resolution: [trackSettings.width, trackSettings.height],
+            refreshRate: trackSettings.frameRate
+          }
+          track.stop();
+          return camera;
+        });
+      } catch (e) { capabilities.debug.camera = e.toString(); }
+
+      capabilities.input = [];
+      
+      if (matchMedia("(any-pointer: fine)").matches) {
+        capabilities.input.push("mouse")
       }
       
-      const audioInputDevices = mediaDevices.filter(device => device.kind === 'audioinput');
-      capabilities.microphone = audioInputDevices.length > 0;
-
-      const videoInputDevices = mediaDevices.filter(device => device.kind === 'videoinput');
-      if (videoInputDevices.length > 0) {
-        capabilities.camera = {};
-        for (var i = 128; i <= 3840; i += 128) {
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { exact: i } } });
-            stream.getTracks().forEach(function (track) {
-              const trackSettings = track.getSettings();
-              capabilities.camera = {
-                type: "webcam",
-                resolution: [trackSettings.width, trackSettings.height],
-                refreshRate: trackSettings.frameRate
-              }
-              track.stop();
-            })
-          } catch (e) { capabilities.debug.camera = e.toString(); break; }
-        }
+      if (matchMedia("(any-pointer: coarse)").matches) {
+        capabilities.input.push("touchscreen")
       }
+
+      if (navigator.keyboard && !(await navigator.keyboard.getLayoutMap()).keys().next().done) {
+        capabilities.input.push("keyboard");
+      }
+
       return capabilities;
     }).end();
   return bounds;

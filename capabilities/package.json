@@ -1,15 +1,15 @@
 {
-  "name": "capabilities",
+  "name": "yanux-playground-capabilities",
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
-  "dependencies": {
-    "nightmare": "^3.0.2"
-  },
-  "devDependencies": {},
   "scripts": {
+    "start": "npx electron ./main/main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Pedro Albuquerque Santos <pedro@albuquerques.net>",
-  "license": "MIT"
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^6.0.8"
+  }
 }

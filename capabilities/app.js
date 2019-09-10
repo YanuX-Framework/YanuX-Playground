@@ -1,4 +1,4 @@
-const Nightmare = require("nightmare")
+const Nightmare = require('nightmare')
 
 const getCapabilities = async () => {
   const nm = new Nightmare({
@@ -19,8 +19,8 @@ const getCapabilities = async () => {
       //capabilities.debug.displays = displays;
 
       capabilities.display = displays.map(d => {
-        const type = d.internal || (!d.bounds.x && !d.bounds.y) ? "internal" : "external";
-        const orientation = d.rotation % 180 ? "portrait" : "landscape";
+        const type = d.internal || (!d.bounds.x && !d.bounds.y) ? 'internal' : 'external';
+        const orientation = d.rotation % 180 ? 'portrait' : 'landscape';
         const virtualResolution = [d.bounds.width, d.bounds.height];
         const bitDepth = d.colorDepth;
         const pixelDensity = d.scaleFactor * 96;
@@ -77,7 +77,7 @@ const getCapabilities = async () => {
         capabilities.camera = stream.getTracks().map(function (track) {
           const trackSettings = track.getSettings();
           const camera = {
-            type: "webcam",
+            type: 'webcam',
             resolution: [trackSettings.width, trackSettings.height],
             refreshRate: trackSettings.frameRate
           }
@@ -88,16 +88,16 @@ const getCapabilities = async () => {
 
       capabilities.input = [];
       
-      if (matchMedia("(any-pointer: fine)").matches) {
-        capabilities.input.push("mouse")
+      if (matchMedia('(any-pointer: fine)').matches) {
+        capabilities.input.push('mouse')
       }
       
-      if (matchMedia("(any-pointer: coarse)").matches) {
-        capabilities.input.push("touchscreen")
+      if (matchMedia('(any-pointer: coarse)').matches) {
+        capabilities.input.push('touchscreen')
       }
 
-      if (navigator.keyboard && !(await navigator.keyboard.getLayoutMap()).keys().next().done) {
-        capabilities.input.push("keyboard");
+      if (navigator.keyboard && (await navigator.keyboard.getLayoutMap()).size) {
+        capabilities.input.push('keyboard');
       }
 
       return capabilities;

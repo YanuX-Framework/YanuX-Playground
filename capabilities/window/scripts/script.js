@@ -12,6 +12,8 @@ async function getCapabilities() {
     //NOTE: We could probably do something similar using the "screen" object (e.g., "screen.width" and "screen.height"), "devicePixelRatio", etc.
     const displays = remote.screen.getAllDisplays()
 
+    //A variable that stores the current device's type.
+    let deviceType = 'unknown';
     //Map the displays to the an array on the capabilities object
     capabilities.display = displays.map(d => {
         //Check if the display is internal. If the property is not available consider it internal/primary if the bounds start at (0,0). 
@@ -44,9 +46,26 @@ async function getCapabilities() {
         //Save the two width and height sizes.
         const size = [width, height];
 
+        //Infer the device type from its internal display size
+        if(type === 'internal') {
+            //If it's smaller than 2 inches it's probably a smartwatch.
+            if(diagonalSize < 2.0) {
+                deviceType = 'smartwatch';
+            //If it's smaller than 7 inches it's probably a smartphone.
+            } else if(diagonalSize < 7.0) {
+                deviceType = 'smartphone';
+            //Otherwise, it's hard to be sure.
+            //I could combine screen size with input types to try to infer a more concrete device type, but I'll leave as other for now!
+            } else {
+                deviceType = 'other';
+            }
+        }
+
         //Return all the information regarding the display.
         return { type, size, orientation, resolution, bitDepth, pixelDensity, pixelRatio, virtualResolution }
     });
+    //Store the current device's type in the capabilities object.
+    capabilities.type = deviceType;
 
     //** SPEAKERS **
     //Create an audio context

@@ -5,10 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "node",
+            "type": "chrome",
             "request": "launch",
-            "name": "Debug YanuX Playground (rules)",
-            "program": "${workspaceFolder}/rules/app.js"
+            "name": "Launch Calculator on Chrome",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}/calculator"
         }
     ]
 }

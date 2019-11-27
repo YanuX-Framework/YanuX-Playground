@@ -1,62 +1,58 @@
-import React, { Component } from 'react';
-import './App.css';
-import ResultComponent from './components/ResultComponent';
-import KeyPadComponent from "./components/KeyPadComponent";
+import React, { Component } from 'react'
+import { connect } from 'react-redux'
+import { calculate, deleteLastEntry, clear, evaluateExpression } from './store/actions/calculate'
+import Authentication from './components/authentication'
+import Calculator from './components/calculator'
+import * as stateStore from './store'
+import './App.css'
 
-class App extends Component {
-  constructor() {
-    super();
-    this.state = {
-      result: ""
-    }
+export class App extends Component {
+  componentDidMount() {
+    console.log('mounted calculator!');
   }
-  onClick = button => {
-    if (button === "=") {
-      this.calculate()
-    }
-    else if (button === "C") {
-      this.reset()
-    }
-    else if (button === "CE") {
-      this.backspace()
-    }
-    else {
-      this.setState({
-        result: this.state.result + button
-      })
-    }
-  };
-  calculate = () => {
-    try {
-      this.setState({
-        result: eval(this.state.result) + ""
-      })
-    } catch (e) {
-      this.setState({
-        result: "error"
-      })
-    }
-  };
-  reset = () => {
-    this.setState({
-      result: ""
-    })
-  };
-  backspace = () => {
-    this.setState({
-      result: this.state.result.slice(0, -1)
-    })
-  };
+
   render() {
     return (
-      <div>
-        <div className="calculator-body">
-          <h1>YanuX Calculator</h1>
-          <ResultComponent result={this.state.result} />
-          <KeyPadComponent onClick={this.onClick} />
+      <React.Fragment>
+        <div className="header">
+          <Authentication.Login {...this.props} />
         </div>
-      </div>
+        <div className="calculator">
+          <Calculator.Screen {...this.props} />
+          <Calculator.Keypad {...this.props} />
+        </div>
+      </React.Fragment>
     );
   }
 }
-export default App;
+
+const mapStateToProps = (state) => {
+  return {
+    loginUrl: stateStore.getLoginUrl(state),
+    expression: stateStore.getExpression(state),
+    total: stateStore.getTotal(state)
+  }
+}
+
+const mapDispatchToProps = (dispatch) => {
+  return {
+    calculate: (buttonKey) => {
+      dispatch(calculate(buttonKey))
+    },
+    delete: () => {
+      dispatch(deleteLastEntry())
+    },
+    clear: () => {
+      dispatch(clear())
+    },
+    evaluate: () => {
+      dispatch(evaluateExpression())
+    },
+  }
+}
+
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps,
+)(App);

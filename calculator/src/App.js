@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import { calculate, deleteLastEntry, clear, evaluateExpression } from './store/actions/calculate'
+import { exchangeAuthorizationCode } from './store/actions/authenticate'
 import Authentication from './components/authentication'
 import Calculator from './components/calculator'
 import * as stateStore from './store'
@@ -10,7 +11,6 @@ export class App extends Component {
   componentDidMount() {
     console.log('mounted calculator!');
   }
-
   render() {
     return (
       <React.Fragment>
@@ -26,17 +26,23 @@ export class App extends Component {
   }
 }
 
-const mapStateToProps = (state) => {
+const mapStateToProps = state => {
   return {
     loginUrl: stateStore.getLoginUrl(state),
+    user: stateStore.getUser(state),
+    authState: stateStore.getAuthState(state),
+    codeVerifier: stateStore.getCodeVerifier(state),
     expression: stateStore.getExpression(state),
     total: stateStore.getTotal(state)
   }
 }
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = dispatch => {
   return {
-    calculate: (buttonKey) => {
+    exchangeAuthorizationCode: (authCode, codeVerifier) => {
+      dispatch(exchangeAuthorizationCode(authCode, codeVerifier))
+    },
+    calculate: buttonKey => {
       dispatch(calculate(buttonKey))
     },
     delete: () => {
@@ -50,7 +56,6 @@ const mapDispatchToProps = (dispatch) => {
     },
   }
 }
-
 
 export default connect(
   mapStateToProps,

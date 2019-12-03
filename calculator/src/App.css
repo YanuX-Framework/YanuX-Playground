@@ -35,11 +35,23 @@ body,
   text-align: right;
 }
 
+.header .link-button,
 .header a:link,
 .header a:visited,
 .header a:hover,
 .header a:active {
   color: white;
+}
+
+.link-button {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  font-size: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .calculator { 

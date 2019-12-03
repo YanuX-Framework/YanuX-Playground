@@ -1,7 +1,13 @@
 
-import { createStore, combineReducers } from 'redux';
+import thunkMiddleware from 'redux-thunk'
+import { createLogger } from 'redux-logger'
+import { createStore, combineReducers, applyMiddleware, compose } from 'redux';
 import authenticationReducer from './reducers/authenticationReducer'
 import calculateReducer from './reducers/calculateReducer'
+
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
+const loggerMiddleware = createLogger()
 
 const rootReducer = combineReducers({
   authentication: authenticationReducer,
@@ -10,17 +16,35 @@ const rootReducer = combineReducers({
 
 export default createStore(
   rootReducer,
-  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+  composeEnhancers(
+    applyMiddleware(
+      thunkMiddleware,
+      loggerMiddleware
+    )
+  )
 )
 
-export const getExpression = (state) => {
-   return state.calculator.expression
+export const getExpression = state => {
+  return state.calculator.expression
 }
 
-export const getTotal = (state) => {
+export const getTotal = state => {
   return state.calculator.total
 }
 
-export const getLoginUrl = (state) => {
+export const getLoginUrl = state => {
   return state.authentication.loginUrl
 }
+
+export const getAuthState = state => {
+  return state.authentication.state
+}
+
+export const getCodeVerifier = state => {
+  return state.authentication.codeVerifier
+}
+
+export const getUser = state => {
+  return state.authentication.user;
+}
+

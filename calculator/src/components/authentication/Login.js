@@ -1,17 +1,20 @@
 import React, { Component } from 'react'
-import authorizationCode from '../../utils/authorizationCode'
 
 export default class Login extends Component {
     componentDidMount() {
-        const authCode = authorizationCode(this.props.authState)
-        if (authCode) { this.props.exchangeAuthorizationCode(authCode, this.props.codeVerifier) }
+        this.props.initializeAuth()
+    }
+    componentDidUpdate() {
+        if (this.props.authError.error) {
+            alert('Please try to login again.')
+        }
     }
     render() {
-        if (this.props.user.id) {
+        if (this.props.user.email) {
             return (
                 <div className="login">
                     <button type="button" className="link-button" onClick={() => console.log('The link was clicked.')}>
-                        Logout: {this.props.user.id}
+                        Logout: {this.props.user.email}
                     </button>
                 </div>
             )

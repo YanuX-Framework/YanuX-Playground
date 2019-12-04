@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import { calculate, deleteLastEntry, clear, evaluateExpression } from './store/actions/calculate'
-import { exchangeAuthorizationCode } from './store/actions/authenticate'
+import { initializeAuth } from './store/actions/authenticate'
 import Authentication from './components/authentication'
 import Calculator from './components/calculator'
 import * as stateStore from './store'
@@ -30,8 +30,7 @@ const mapStateToProps = state => {
   return {
     loginUrl: stateStore.getLoginUrl(state),
     user: stateStore.getUser(state),
-    authState: stateStore.getAuthState(state),
-    codeVerifier: stateStore.getCodeVerifier(state),
+    authError: stateStore.getAuthError(state),
     expression: stateStore.getExpression(state),
     total: stateStore.getTotal(state)
   }
@@ -39,8 +38,8 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
   return {
-    exchangeAuthorizationCode: (authCode, codeVerifier) => {
-      dispatch(exchangeAuthorizationCode(authCode, codeVerifier))
+    initializeAuth: (authCode, codeVerifier) => {
+      dispatch(initializeAuth(authCode, codeVerifier))
     },
     calculate: buttonKey => {
       dispatch(calculate(buttonKey))

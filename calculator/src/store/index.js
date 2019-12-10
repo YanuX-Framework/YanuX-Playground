@@ -53,7 +53,7 @@ export const getCodeVerifier = state => {
   return state.authentication.codeVerifier
 }
 
-export const getUser = state => {
-  return state.authentication.user;
+export const getIdToken = state => {
+  return state.authentication.idToken;
 }
 

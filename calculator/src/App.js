@@ -29,7 +29,7 @@ export class App extends Component {
 const mapStateToProps = state => {
   return {
     loginUrl: stateStore.getLoginUrl(state),
-    user: stateStore.getUser(state),
+    idToken: stateStore.getIdToken(state),
     authError: stateStore.getAuthError(state),
     expression: stateStore.getExpression(state),
     total: stateStore.getTotal(state)

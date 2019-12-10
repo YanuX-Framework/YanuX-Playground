@@ -1,6 +1,7 @@
 import * as types from '../types';
 import authenticationConfig from '../../config/authentication'
-import authorizationCode from '../../utils/authorizationCode'
+import extractAuthorizationCode from '../../utils/extractAuthorizationCode'
+import extractIdToken from '../../utils/extractIdToken'
 
 export const receivedAuthorizationCode = code => {
     return { type: types.SET_AUTHORIZATION_CODE, code }
@@ -20,10 +21,6 @@ export const exchangingRefreshToken = refreshToken => {
 
 export const exchangedRefreshToken = (refreshToken, json) => {
     return { type: types.EXCHANGED_REFRESH_TOKEN, refreshToken, json }
-}
-
-export const requestUserInfo = () => {
-    return { type: types.REQUEST_USER_INFO }
 }
 
 export const receivedUserInfo = json => {
@@ -52,10 +49,14 @@ export const initializeAuth = () => {
     return (dispatch, getState) => {
         const initializer = async () => {
             let state = getState()
-            const code = authorizationCode(state.authentication.state)
+            const idToken = state.authentication.idToken ? state.authentication.idToken : await extractIdToken(state.authentication.nonce)
+            if (idToken) {
+                dispatch(receivedUserInfo(idToken))
+            }
+            const code = extractAuthorizationCode(state.authentication.state)
             const codeVerifier = state.authentication.codeVerifier
             try {
-                if (!state.authentication.accessToken) {
+                if (!state.authentication.accessToken && code && codeVerifier) {
                     dispatch(exchangingAuthorizationCode(code))
                     const response = await fetch(
                         `${authenticationConfig.oauth2_authentication_server}` +
@@ -74,25 +75,11 @@ export const initializeAuth = () => {
                         })
                     })
                     dispatch(exchangedAuthorizationCode(code, await response.json()))
-                }
-                dispatch(requestUserInfo())
-                state = getState()
-                const response = await fetch(
-                    `${authenticationConfig.oauth2_authentication_server}` +
-                    `${authenticationConfig.oauth2_authentication_server_verify_token_endpoint}`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'Authorization': state.authentication.tokenType + ' ' + state.authentication.accessToken
-                    }
-                })
-                if (response.status === 200) {
-                    //TODO: Implement OpenID Connect on YanuX Auth instead of this proprietary endpoint!
-                    dispatch(receivedUserInfo(await response.json()))
-                } else if (state.authentication.refreshToken) {
+                } 
+                /*else if (state.authentication.refreshToken) {
                     dispatch(exchangingRefreshToken(state.authentication.refreshToken))
                     dispatch(exchangedRefreshToken(state.authentication.refreshToken, await refreshToken(state.authentication.refreshToken)))
-                    initializer()
-                }
+                }*/
             } catch (err) {
                 console.log('Something unexpected has happened: ', err)
             }

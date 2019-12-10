@@ -10,11 +10,11 @@ export default class Login extends Component {
         }
     }
     render() {
-        if (this.props.user.email) {
+        if (this.props.idToken && this.props.idToken.email) {
             return (
                 <div className="login">
                     <button type="button" className="link-button" onClick={() => console.log('The link was clicked.')}>
-                        Logout: {this.props.user.email}
+                        Logout: {this.props.idToken.email}
                     </button>
                 </div>
             )

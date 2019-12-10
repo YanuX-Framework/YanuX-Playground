@@ -2,7 +2,9 @@
   "name": "yanux-calculator",
   "version": "0.1.0",
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "jsrsasign": "^8.0.12"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",

@@ -5,23 +5,30 @@ import shajs from 'sha.js'
 import authenticationConfig from '../../config/authentication'
 import * as types from '../types'
 
+const idToken = localStorage.getItem('id_token') ? JSON.parse(localStorage.getItem('id_token')) : null
 const codeVerifier = sessionStorage.getItem('code_verifier') ? sessionStorage.getItem('code_verifier') : base64url(randomBytes(32))
 const state = sessionStorage.getItem('state') ? sessionStorage.getItem('state') : base64url(randomBytes(16))
+const nonce = sessionStorage.getItem('nonce') ? sessionStorage.getItem('nonce') : base64url(randomBytes(16))
 const code_challenge = base64url.fromBase64(shajs('sha256').update(codeVerifier).digest('base64'))
 sessionStorage.setItem('code_verifier', codeVerifier)
 sessionStorage.setItem('state', state)
+sessionStorage.setItem('nonce', nonce)
 
 const initialState = {
+    idToken,
     codeVerifier,
     state,
+    nonce,
     loginUrl: `${authenticationConfig.oauth2_authentication_server}` +
         `${authenticationConfig.oauth2_authentication_server_authorization_endpoint}?` +
         `client_id=${authenticationConfig.oauth2_client_id}&` +
-        `response_type=code&` +
+        `response_type=code id_token&` +
+        `response_mode=fragment&` +
         `redirect_uri=${authenticationConfig.oauth2_redirect_uri}&` +
         `code_challenge=${code_challenge}&` +
         `code_challenge_method=S256&` +
-        `state=${state}`,
+        `state=${state}&` +
+        `nonce=${nonce}`,
     authTimestamp: localStorage.getItem('auth_timestamp'),
     expiresIn: localStorage.getItem('auth_expires_in'),
     accessToken: localStorage.getItem('access_token'),
@@ -29,7 +36,6 @@ const initialState = {
     tokenType: localStorage.getItem('token_type'),
     error: null,
     errorDescription: null,
-    user: {}
 }
 
 export default (state = initialState, action) => {
@@ -37,18 +43,6 @@ export default (state = initialState, action) => {
         case types.SET_AUTHORIZATION_CODE:
             state.authorizationCode = action.code
             return Object.assign({}, state);
-        /*case types.EXCHANGING_REFRESH_TOKEN:
-            state.authTimestamp = null
-            state.expiresIn = null
-            state.accessToken = null
-            state.refreshToken = null
-            state.tokenType = null
-            localStorage.removeItem('auth_timestamp')
-            localStorage.removeItem('auth_expires_in')
-            localStorage.removeItem('access_token')
-            localStorage.removeItem('refresh_token')
-            localStorage.removeItem('token_type')
-            return Object.assign({}, state);*/
         case types.EXCHANGED_AUTHORIZATION_CODE:
         case types.EXCHANGED_REFRESH_TOKEN:
             //Check if all information needed is available
@@ -76,7 +70,8 @@ export default (state = initialState, action) => {
             }
             return Object.assign({}, state);
         case types.RECEIVED_USER_INFO:
-            state.user = action.json.response.user
+            state.idToken = action.json
+            localStorage.setItem('id_token', JSON.stringify(state.idToken))
             return Object.assign({}, state);
         default:
             return state

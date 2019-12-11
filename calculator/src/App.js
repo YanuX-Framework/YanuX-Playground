@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import { calculate, deleteLastEntry, clear, evaluateExpression } from './store/actions/calculate'
-import { initializeAuth } from './store/actions/authenticate'
+import { initializeAuth, logout } from './store/actions/authenticate'
 import Authentication from './components/authentication'
 import Calculator from './components/calculator'
 import * as stateStore from './store'
@@ -40,6 +40,9 @@ const mapDispatchToProps = dispatch => {
   return {
     initializeAuth: (authCode, codeVerifier) => {
       dispatch(initializeAuth(authCode, codeVerifier))
+    },
+    logout: () => {
+      dispatch(logout())
     },
     calculate: buttonKey => {
       dispatch(calculate(buttonKey))

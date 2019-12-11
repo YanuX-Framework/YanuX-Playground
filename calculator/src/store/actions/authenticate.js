@@ -3,8 +3,20 @@ import authenticationConfig from '../../config/authentication'
 import extractAuthorizationCode from '../../utils/extractAuthorizationCode'
 import extractIdToken from '../../utils/extractIdToken'
 
+export const receivedIdToken = json => {
+    return { type: types.SET_ID_TOKEN, json }
+}
+
 export const receivedAuthorizationCode = code => {
     return { type: types.SET_AUTHORIZATION_CODE, code }
+}
+
+export const logout = () => {
+    return { type: types.LOGOUT }
+}
+
+export const readyToConnect = accessToken => {
+    return { type: types.READY_TO_CONNECT, accessToken }
 }
 
 export const exchangingAuthorizationCode = code => {
@@ -23,27 +35,7 @@ export const exchangedRefreshToken = (refreshToken, json) => {
     return { type: types.EXCHANGED_REFRESH_TOKEN, refreshToken, json }
 }
 
-export const receivedUserInfo = json => {
-    return { type: types.RECEIVED_USER_INFO, json }
-}
 
-const refreshToken = async refreshToken => {
-    const response = await fetch(
-        `${authenticationConfig.oauth2_authentication_server}` +
-        `${authenticationConfig.oauth2_authentication_server_token_endpoint}`, {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            grant_type: 'refresh_token',
-            client_id: authenticationConfig.oauth2_client_id,
-            refresh_token: refreshToken,
-        })
-    })
-    return response.json()
-}
 
 export const initializeAuth = () => {
     return (dispatch, getState) => {
@@ -51,7 +43,7 @@ export const initializeAuth = () => {
             let state = getState()
             const idToken = state.authentication.idToken ? state.authentication.idToken : await extractIdToken(state.authentication.nonce)
             if (idToken) {
-                dispatch(receivedUserInfo(idToken))
+                dispatch(receivedIdToken(idToken))
             }
             const code = extractAuthorizationCode(state.authentication.state)
             const codeVerifier = state.authentication.codeVerifier
@@ -75,15 +67,46 @@ export const initializeAuth = () => {
                         })
                     })
                     dispatch(exchangedAuthorizationCode(code, await response.json()))
-                } 
-                /*else if (state.authentication.refreshToken) {
-                    dispatch(exchangingRefreshToken(state.authentication.refreshToken))
-                    dispatch(exchangedRefreshToken(state.authentication.refreshToken, await refreshToken(state.authentication.refreshToken)))
-                }*/
+                }
+                state = getState()
+                dispatch(readyToConnect(state.authentication.accessToken))
             } catch (err) {
                 console.log('Something unexpected has happened: ', err)
             }
+
         }
         initializer()
     }
 }
+
+// -----------------------------------------------------------------------------
+// UNUSED SNIPPETS
+// -----------------------------------------------------------------------------
+/*
+else if (state.authentication.refreshToken) {
+    dispatch(exchangingRefreshToken(state.authentication.refreshToken))
+    dispatch(exchangedRefreshToken(state.authentication.refreshToken, await refreshToken(state.authentication.refreshToken)))
+}
+*/
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+/*
+const refreshToken = async refreshToken => {
+    const response = await fetch(
+        `${authenticationConfig.oauth2_authentication_server}` +
+        `${authenticationConfig.oauth2_authentication_server_token_endpoint}`, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            grant_type: 'refresh_token',
+            client_id: authenticationConfig.oauth2_client_id,
+            refresh_token: refreshToken,
+        })
+    })
+    return response.json()
+}
+*/
+// -----------------------------------------------------------------------------

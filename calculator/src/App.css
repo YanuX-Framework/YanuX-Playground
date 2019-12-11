@@ -35,23 +35,28 @@ body,
   text-align: right;
 }
 
-.header .link-button,
-.header a:link,
-.header a:visited,
-.header a:hover,
-.header a:active {
+.header-button {
+  display: inline;
+  margin: 0;
+  padding: 6px;
+  border: none;
+  border-radius: 4px;
+  background-color: #aaa;
+  font-size: inherit;
+  text-decoration: none;
+  cursor: pointer;
   color: white;
 }
 
-.link-button {
-  display: inline;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background-color: transparent;
-  font-size: inherit;
-  text-decoration: underline;
-  cursor: pointer;
+a:link.header-button,
+a:visited.header-button,
+a:hover.header-button {
+  color: white;
+}
+
+:active.header-button,
+a:active.header-button {
+  color: black;
 }
 
 .calculator { 
@@ -59,11 +64,11 @@ body,
   flex-direction: column;
   width: 100%;
   max-width: 480px;
+  box-sizing: border-box;
   margin: auto;
   padding: 8px;
   border: black solid 1px;
   border-radius: 8px;
-  flex-direction: column;
   flex: 1 1;
 }
 

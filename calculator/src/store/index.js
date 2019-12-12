@@ -3,8 +3,11 @@ import thunkMiddleware from 'redux-thunk'
 import { createLogger } from 'redux-logger'
 import { createStore, combineReducers, applyMiddleware, compose } from 'redux';
 import authenticationReducer from './reducers/authenticationReducer'
-import yanuxCoordinatorReducer from './reducers/yanuxCoordinatorReducer'
 import calculateReducer from './reducers/calculateReducer'
+import yanuxCoordinatorReducer from './reducers/yanuxCoordinatorReducer'
+
+import yanuxCoordinatorSyncMiddleware from './middleware/yanuxCoordinatorSync'
+
 
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 
@@ -12,8 +15,8 @@ const loggerMiddleware = createLogger()
 
 const rootReducer = combineReducers({
   authentication: authenticationReducer,
-  yanuxCoordinator: yanuxCoordinatorReducer,
-  calculator: calculateReducer
+  calculator: calculateReducer,
+  yanuxCoordinator: yanuxCoordinatorReducer
 })
 
 export default createStore(
@@ -21,7 +24,8 @@ export default createStore(
   composeEnhancers(
     applyMiddleware(
       thunkMiddleware,
-      loggerMiddleware
+      loggerMiddleware,
+      yanuxCoordinatorSyncMiddleware
     )
   )
 )
@@ -38,15 +42,8 @@ export const getLoginUrl = state => {
   return state.authentication.loginUrl
 }
 
-export const getAuthState = state => {
-  return state.authentication.state
-}
-
-export const getAuthError = state => {
-  return {
-    error: state.authentication.error,
-    errorDescription: state.authentication.errorDescription
-  }
+export const getAuthenticationError = state => {
+  return state.authentication.error
 }
 
 export const getCodeVerifier = state => {

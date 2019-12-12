@@ -30,7 +30,7 @@ const mapStateToProps = state => {
   return {
     loginUrl: stateStore.getLoginUrl(state),
     idToken: stateStore.getIdToken(state),
-    authError: stateStore.getAuthError(state),
+    authenticationError: stateStore.getAuthenticationError(state),
     expression: stateStore.getExpression(state),
     total: stateStore.getTotal(state)
   }

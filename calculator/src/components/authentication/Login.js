@@ -5,8 +5,14 @@ export default class Login extends Component {
         this.props.initializeAuth()
     }
     componentDidUpdate() {
-        if (this.props.authError.error) {
-            alert('Please try to login again.')
+        if (this.props.authenticationError) {
+            if (this.props.authenticationError.name === 'NotAuthenticated') {
+                alert('You are not authenticated. Please login to use the application.')
+            } else if (this.props.authenticationError.message) {
+                alert(this.props.authenticationError.message)
+            } else {
+                alert('Something wrong has happened with your authentication. Please try to authenticate again.')
+            }
         }
     }
     render() {

@@ -4,6 +4,7 @@ import shajs from 'sha.js'
 
 import authenticationConfig from '../../config/authentication'
 import * as types from '../types'
+import CustomError from '../../utils/CustomError'
 
 const initialState = () => {
     const idToken = localStorage.getItem('id_token') ? JSON.parse(localStorage.getItem('id_token')) : null
@@ -35,7 +36,6 @@ const initialState = () => {
         refreshToken: localStorage.getItem('refresh_token'),
         tokenType: localStorage.getItem('token_type'),
         error: null,
-        errorDescription: null,
     }
 }
 
@@ -51,7 +51,9 @@ export default (state = initialState(), action) => {
         case types.LOGOUT:
             localStorage.clear()
             sessionStorage.clear()
-            return Object.assign({}, initialState());
+            return Object.assign({}, initialState(), {
+                error: action.error
+            });
         case types.EXCHANGED_AUTHORIZATION_CODE:
         case types.EXCHANGED_REFRESH_TOKEN:
             //Check if all information needed is available
@@ -74,8 +76,7 @@ export default (state = initialState(), action) => {
                 localStorage.setItem('token_type', state.tokenType)
             } else {
                 //If there was an error save it for further processing
-                state.error = action.json.error
-                state.errorDescription = action.json.error_description
+                state.error = new CustomError(action.json.error, action.json.error_description)
             }
             window.history.pushState('', document.title, window.location.pathname + window.location.search)
             return Object.assign({}, state);

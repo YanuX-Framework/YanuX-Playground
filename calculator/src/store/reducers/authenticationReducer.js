@@ -41,6 +41,12 @@ const initialState = () => {
 
 export default (state = initialState(), action) => {
     switch (action.type) {
+        case types.LOGOUT:
+            localStorage.clear()
+            sessionStorage.clear()
+            return Object.assign({}, initialState(), {
+                error: action.error
+            });
         case types.SET_ID_TOKEN:
             state.idToken = action.json
             localStorage.setItem('id_token', JSON.stringify(state.idToken))
@@ -48,12 +54,6 @@ export default (state = initialState(), action) => {
         case types.SET_AUTHORIZATION_CODE:
             state.authorizationCode = action.code
             return Object.assign({}, state);
-        case types.LOGOUT:
-            localStorage.clear()
-            sessionStorage.clear()
-            return Object.assign({}, initialState(), {
-                error: action.error
-            });
         case types.EXCHANGED_AUTHORIZATION_CODE:
         case types.EXCHANGED_REFRESH_TOKEN:
             //Check if all information needed is available

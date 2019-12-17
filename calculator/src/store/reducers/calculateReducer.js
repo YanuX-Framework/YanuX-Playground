@@ -24,6 +24,14 @@ function setExpression({ expression, total }, action) {
 
 export default (state = initialState, action) => {
   switch (action.type) {
+    case types.LOGOUT:
+      return Object.assign({}, initialState)
+    case types.SET_VALUES:
+      return {
+        ...state,
+        expression: action.expression,
+        total: action.total
+      }
     case types.SET_EXPRESSION:
       let expression = setExpression(state, action)
       return {

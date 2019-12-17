@@ -8,17 +8,15 @@ import {
 
 import yanuxBrokerConfig from '../../config/yanuxBroker'
 
-import {
-    resourceSubscriptionHandler,
-    proxemicsSubscriptionHandler,
-    instancesSubscriptionHandler,
-    eventsSubcriptionHandler
-} from '../actions/yanuxCoordinator'
-
-const initialState = { coordinator: null }
+const initialState = {
+    coordinator: null,
+    connected: false
+}
 
 export default (state = initialState, action) => {
     switch (action.type) {
+        case types.LOGOUT:
+            return Object.assign({}, initialState);
         case types.READY_TO_CONNECT:
             state.coordinator = new FeathersCoordinator(
                 yanuxBrokerConfig.broker_url,
@@ -29,18 +27,11 @@ export default (state = initialState, action) => {
                     yanuxBrokerConfig.app
                 ])
             )
-            state.coordinator.init().then(results => {
-                const initialState = results[0];
-                const initialProxemics = results[1];
-                console.log('Connected to YanuX Broker')
-                console.log('Initial State', initialState)
-                console.log('Initial Proxemics', initialProxemics)
-            }).catch(err => { console.error('Error Connecting to YanuX Broker', err) })
-            state.coordinator.subscribeResource(resourceSubscriptionHandler)
-            state.coordinator.subscribeProxemics(proxemicsSubscriptionHandler)
-            state.coordinator.subscribeInstances(instancesSubscriptionHandler)
-            state.coordinator.subscribeEvents(eventsSubcriptionHandler)
             return Object.assign({}, state);
+        case types.CONNECTED:
+            return Object.assign({}, state, {
+                connected: true
+            });
         default:
             return state
     }

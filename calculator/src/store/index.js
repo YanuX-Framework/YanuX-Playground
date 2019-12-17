@@ -6,7 +6,7 @@ import authenticationReducer from './reducers/authenticationReducer'
 import calculateReducer from './reducers/calculateReducer'
 import yanuxCoordinatorReducer from './reducers/yanuxCoordinatorReducer'
 
-import yanuxCoordinatorSyncMiddleware from './middleware/yanuxCoordinatorSync'
+import yanuxCoordinatorMiddleware from './middleware/yanuxCoordinatorMiddleware'
 
 
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
@@ -25,10 +25,31 @@ export default createStore(
     applyMiddleware(
       thunkMiddleware,
       loggerMiddleware,
-      yanuxCoordinatorSyncMiddleware
+      yanuxCoordinatorMiddleware
     )
   )
 )
+
+
+export const getLoginUrl = state => {
+  return state.authentication.loginUrl
+}
+
+export const getIdToken = state => {
+  return state.authentication.idToken;
+}
+
+export const getAuthenticationError = state => {
+  return state.authentication.error
+}
+
+export const getCoordinator = state => {
+  return state.yanuxCoordinator.coordinator
+}
+
+export const isCoordinatorReady = state => {
+  return state.yanuxCoordinator.connected
+}
 
 export const getExpression = state => {
   return state.calculator.expression
@@ -37,20 +58,3 @@ export const getExpression = state => {
 export const getTotal = state => {
   return state.calculator.total
 }
-
-export const getLoginUrl = state => {
-  return state.authentication.loginUrl
-}
-
-export const getAuthenticationError = state => {
-  return state.authentication.error
-}
-
-export const getCodeVerifier = state => {
-  return state.authentication.codeVerifier
-}
-
-export const getIdToken = state => {
-  return state.authentication.idToken;
-}
-

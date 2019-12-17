@@ -1,5 +1,13 @@
 import * as types from '../types';
 
+export const setValues = (expression, total) => {
+  return {
+    type: types.SET_VALUES,
+    expression,
+    total
+  }
+}
+
 export const calculate = key => {
   return {
     type: types.SET_EXPRESSION,

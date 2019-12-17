@@ -1,10 +1,14 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
-import { calculate, deleteLastEntry, clear, evaluateExpression } from './store/actions/calculate'
+import { setValues, calculate, deleteLastEntry, clear, evaluateExpression } from './store/actions/calculate'
 import { initializeAuth, logout } from './store/actions/authenticate'
+import { connected } from './store/actions/yanux'
+
 import Authentication from './components/authentication'
 import Calculator from './components/calculator'
-import * as stateStore from './store'
+import Yanux from './components/yanux'
+
+import * as store from './store'
 import './App.css'
 
 export class App extends Component {
@@ -14,6 +18,7 @@ export class App extends Component {
   render() {
     return (
       <React.Fragment>
+        <Yanux.Coordinator {...this.props} />
         <div className="header">
           <Authentication.Login {...this.props} />
         </div>
@@ -28,11 +33,13 @@ export class App extends Component {
 
 const mapStateToProps = state => {
   return {
-    loginUrl: stateStore.getLoginUrl(state),
-    idToken: stateStore.getIdToken(state),
-    authenticationError: stateStore.getAuthenticationError(state),
-    expression: stateStore.getExpression(state),
-    total: stateStore.getTotal(state)
+    loginUrl: store.getLoginUrl(state),
+    idToken: store.getIdToken(state),
+    authenticationError: store.getAuthenticationError(state),
+    coordinator: store.getCoordinator(state),
+    isCoordinatorReady: store.isCoordinatorReady(state),
+    expression: store.getExpression(state),
+    total: store.getTotal(state)
   }
 }
 
@@ -43,6 +50,12 @@ const mapDispatchToProps = dispatch => {
     },
     logout: () => {
       dispatch(logout())
+    },
+    connected: (state, proxemics) => {
+      dispatch(connected(state, proxemics))
+    },
+    setValues: (expression, total) => {
+      dispatch(setValues(expression, total))
     },
     calculate: buttonKey => {
       dispatch(calculate(buttonKey))

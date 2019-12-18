@@ -12,21 +12,29 @@ export default class Coordinator extends React.Component {
                 console.log('Initial Proxemics', initialProxemics)
                 resourceSubscriptionHandler(this)(initialState)
                 this.props.connected(initialState, initialProxemics)
-            }).catch(err => { console.error('Error Connecting to YanuX Broker', err) })
+            }).catch(err => {
+                console.error('Error Connecting to YanuX Broker', err)
+                this.props.logout()
+            })
             coordinator.subscribeResource(resourceSubscriptionHandler(this))
             coordinator.subscribeProxemics(proxemicsSubscriptionHandler(this))
             coordinator.subscribeInstances(instancesSubscriptionHandler(this))
             coordinator.subscribeEvents(eventsSubcriptionHandler(this))
+            coordinator.subscribeReconnects(reconnectSubscriptionHandler(this))
         }
     }
-    render() { return null }
+    render() {
+        if (!this.props.isCoordinatorReady) {
+            return (
+                <div className="overlay">
+                    <div className="text">Loading</div>
+                </div>
+            )
+        } else { return null }
+    }
 }
 
-const resourceSubscriptionHandler = component => (data, eventType) => {
-    console.log(
-        'Resource Subscriber Handler Data:', data,
-        'Event Type', eventType
-    )
+const updateState = (component, data) => {
     if (component.props.expression !== data.expression ||
         component.props.total !== data.total) {
         console.log(
@@ -39,14 +47,39 @@ const resourceSubscriptionHandler = component => (data, eventType) => {
     }
 }
 
+const resourceSubscriptionHandler = component => (data, eventType) => {
+    console.log(
+        'Resource Subscriber Handler Data:', data,
+        'Event Type:', eventType
+    )
+    updateState(component, data)
+}
+
 const proxemicsSubscriptionHandler = component => (data, eventType) => {
-    console.log('Proxemics Subscriber Handler Data:', data, 'Event Type', eventType)
+    console.log(
+        'Proxemics Subscriber Handler Data:', data,
+        'Event Type:', eventType
+    )
 }
 
 const instancesSubscriptionHandler = component => (data, eventType) => {
-    console.log('Inatances Subscription Handler Data:', data, 'Event Type', eventType)
+    console.log(
+        'Inatances Subscription Handler Data:', data,
+        'Event Type:', eventType
+    )
 }
 
 const eventsSubcriptionHandler = component => (data, eventType) => {
-    console.log('Events Subscription Handler Data:', data, 'Event Type', eventType)
+    console.log(
+        'Events Subscription Handler Data:', data,
+        'Event Type:', eventType
+    )
+}
+
+const reconnectSubscriptionHandler = component => (state, proxemics) => {
+    console.log(
+        'Reconnect Subscription Handler State:', state,
+        'Proxemics:', proxemics
+    )
+    updateState(component, state)
 }

@@ -3,14 +3,16 @@ import * as types from '../types'
 import {
     FeathersCoordinator,
     Credentials,
-    /*ComponentsRuleEngine*/
+    ComponentsRuleEngine
 } from '@yanux/coordinator'
 
 import yanuxBrokerConfig from '../../config/yanuxBroker'
+import yanuxCoordinatorConfig from '../../config/yanuxCoordinator'
 
 const initialState = {
+    connected: false,
     coordinator: null,
-    connected: false
+    componentsRestrictions: yanuxCoordinatorConfig.components_restrictions
 }
 
 export default (state = initialState, action) => {
@@ -29,6 +31,7 @@ export default (state = initialState, action) => {
             )
             return Object.assign({}, state);
         case types.CONNECTED:
+            state.componentsRuleEngine = new ComponentsRuleEngine(state.coordinator.device.deviceUuid, state.componentsRestrictions)
             return Object.assign({}, state, {
                 connected: true
             });

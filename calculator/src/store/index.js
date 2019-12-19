@@ -47,6 +47,10 @@ export const getCoordinator = state => {
   return state.yanuxCoordinator.coordinator
 }
 
+export const getComponentsRuleEngine = state => {
+  return state.yanuxCoordinator.componentsRuleEngine
+}
+
 export const isCoordinatorReady = state => {
   return state.yanuxCoordinator.connected
 }

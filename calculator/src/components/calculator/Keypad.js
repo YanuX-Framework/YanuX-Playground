@@ -32,7 +32,6 @@ export default class Keypad extends Component {
                       key={key}
                       onButtonClick={this.handleClick}
                       buttonKey={key}
-                      disabled={!this.props.isCoordinatorReady}
                     />
                   ))
                 }

@@ -110,7 +110,7 @@ a:active.header-button {
   background: #ccc;
   border: black solid 1px;
   border-radius: 4px;
-  font-size: 3vmin;
+  font-size: 2vmax;
   cursor: pointer;
 }
 

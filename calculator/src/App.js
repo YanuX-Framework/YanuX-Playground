@@ -36,8 +36,9 @@ const mapStateToProps = state => {
     loginUrl: store.getLoginUrl(state),
     idToken: store.getIdToken(state),
     authenticationError: store.getAuthenticationError(state),
-    coordinator: store.getCoordinator(state),
     isCoordinatorReady: store.isCoordinatorReady(state),
+    coordinator: store.getCoordinator(state),
+    componentsRuleEngine: store.getComponentsRuleEngine(state),
     expression: store.getExpression(state),
     total: store.getTotal(state)
   }

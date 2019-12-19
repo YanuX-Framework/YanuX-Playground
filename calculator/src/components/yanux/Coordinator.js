@@ -27,7 +27,7 @@ export default class Coordinator extends React.Component {
         if (!this.props.isCoordinatorReady) {
             return (
                 <div className="overlay">
-                    <div className="text">Loading</div>
+                    {this.props.idToken ? <div className="text">Loading</div> : null}
                 </div>
             )
         } else { return null }
@@ -43,7 +43,23 @@ const updateState = (component, data) => {
             'Props Total:', component.props.total,
             'Data Total:', data.total
         )
-        component.props.setValues(data.expression, data.total)
+        component.props.setValues(data.expression || '', data.total || '0')
+    }
+}
+
+const updateComponents = (component) => {
+    const coordinator = component.props.coordinator
+    const componentsRuleEngine = component.props.componentsRuleEngine
+    // TODO: Finish this!
+    if (coordinator && componentsRuleEngine) {
+        coordinator.getActiveInstances().then(activeInstances => {
+            const proxemics = coordinator.proxemics.state
+            componentsRuleEngine.proxemics = proxemics
+            componentsRuleEngine.instances = activeInstances
+            componentsRuleEngine.run()
+                .then(res => console.log('[Components Rule Engine] Result:', res))
+                .catch(err => console.error('[Components Rule Engine] Error:', err))
+        }).catch(err => console.error(err));
     }
 }
 
@@ -60,6 +76,7 @@ const proxemicsSubscriptionHandler = component => (data, eventType) => {
         'Proxemics Subscriber Handler Data:', data,
         'Event Type:', eventType
     )
+    updateComponents(component)
 }
 
 const instancesSubscriptionHandler = component => (data, eventType) => {
@@ -67,6 +84,7 @@ const instancesSubscriptionHandler = component => (data, eventType) => {
         'Inatances Subscription Handler Data:', data,
         'Event Type:', eventType
     )
+    updateComponents(component)
 }
 
 const eventsSubcriptionHandler = component => (data, eventType) => {

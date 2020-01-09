@@ -12,6 +12,7 @@ export default class Coordinator extends React.Component {
                 console.log('Initial Proxemics', initialProxemics)
                 resourceSubscriptionHandler(this)(initialState)
                 this.props.connected(initialState, initialProxemics)
+                updateComponents(this)
             }).catch(err => {
                 console.error('Error Connecting to YanuX Broker', err)
                 this.props.logout()
@@ -47,7 +48,7 @@ const updateState = (component, data) => {
     }
 }
 
-const updateComponents = (component) => {
+const updateComponents = component => {
     const coordinator = component.props.coordinator
     const componentsRuleEngine = component.props.componentsRuleEngine
     // TODO: Finish this!

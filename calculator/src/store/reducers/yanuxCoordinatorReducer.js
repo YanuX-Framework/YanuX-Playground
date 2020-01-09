@@ -6,13 +6,18 @@ import {
     ComponentsRuleEngine
 } from '@yanux/coordinator'
 
+import queryString from 'query-string'
+
 import yanuxBrokerConfig from '../../config/yanuxBroker'
 import yanuxCoordinatorConfig from '../../config/yanuxCoordinator'
+
+const parameters = queryString.parse(window.location.hash);
 
 const initialState = {
     connected: false,
     coordinator: null,
-    componentsRestrictions: yanuxCoordinatorConfig.components_restrictions
+    componentsRestrictions: yanuxCoordinatorConfig.components_restrictions,
+    localDeviceUrl: parameters.local_device_url
 }
 
 export default (state = initialState, action) => {
@@ -22,7 +27,7 @@ export default (state = initialState, action) => {
         case types.READY_TO_CONNECT:
             state.coordinator = new FeathersCoordinator(
                 yanuxBrokerConfig.broker_url,
-                yanuxBrokerConfig.local_device_url,
+                state.localDeviceUrl ? state.localDeviceUrl : yanuxBrokerConfig.local_device_url,
                 yanuxBrokerConfig.app,
                 new Credentials('yanux', [
                     action.accessToken,

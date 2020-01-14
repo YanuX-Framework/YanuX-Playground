@@ -1,6 +1,7 @@
 export default {
     components_restrictions: {
         "screen": {
+            "showWhenLocalDeviceIsMissing": true, 
             "display": {
                 "operator": "AND",
                 "values": {
@@ -10,6 +11,7 @@ export default {
             }
         },
         "keypad": {
+            "showWhenLocalDeviceIsMissing": true,
             "type": { "value": "smartphone", "enforce": false },
             "display": true,
             "input": { "operator": "OR", "values": ["mouse", "touchscreen"] }

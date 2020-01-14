@@ -30,7 +30,6 @@ export default createStore(
   )
 )
 
-
 export const getLoginUrl = state => {
   return state.authentication.loginUrl
 }
@@ -49,6 +48,10 @@ export const getCoordinator = state => {
 
 export const getComponentsRuleEngine = state => {
   return state.yanuxCoordinator.componentsRuleEngine
+}
+
+export const getComponentsConfig = state => {
+  return state.yanuxCoordinator.componentsConfig
 }
 
 export const isCoordinatorReady = state => {

@@ -39,7 +39,10 @@ export default (state = initialState, action) => {
             state.componentsRuleEngine = new ComponentsRuleEngine(state.coordinator.device.deviceUuid, state.componentsRestrictions)
             return Object.assign({}, state, {
                 connected: true
-            });
+            })
+        case types.CONFIGURE_COMPONENTS:
+            state.componentsConfig = action.componentsConfig
+            return Object.assign({}, state)
         default:
             return state
     }

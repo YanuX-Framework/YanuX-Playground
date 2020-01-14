@@ -44,22 +44,22 @@ const updateState = (component, data) => {
             'Props Total:', component.props.total,
             'Data Total:', data.total
         )
-        component.props.setValues(data.expression || '', data.total || '0')
+        component.props.setValues(data.expression || '', data.total || 0)
     }
 }
 
 const updateComponents = component => {
     const coordinator = component.props.coordinator
     const componentsRuleEngine = component.props.componentsRuleEngine
-    // TODO: Finish this!
     if (coordinator && componentsRuleEngine) {
         coordinator.getActiveInstances().then(activeInstances => {
             const proxemics = coordinator.proxemics.state
             componentsRuleEngine.proxemics = proxemics
             componentsRuleEngine.instances = activeInstances
-            componentsRuleEngine.run()
-                .then(res => console.log('[Components Rule Engine] Result:', res))
-                .catch(err => console.error('[Components Rule Engine] Error:', err))
+            componentsRuleEngine.run().then(res => {
+                console.log('[Components Rule Engine] Result:', res)
+                component.props.configureComponents(res.componentsConfig)
+            }).catch(err => console.error('[Components Rule Engine] Error:', err))
         }).catch(err => console.error(err));
     }
 }

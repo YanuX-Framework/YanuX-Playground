@@ -12,6 +12,8 @@ export const LOGOUT = 'LOGOUT'
 export const READY_TO_CONNECT = 'READY_TO_CONNECT'
 export const CONNECTED = 'CONNECTED'
 
+export const CONFIGURE_COMPONENTS = 'CONFIGURE_COMPONENTS'
+
 export const SET_VALUES = 'SET_VALUES'
 
 export const SET_EXPRESSION = 'SET_EXPRESSION'

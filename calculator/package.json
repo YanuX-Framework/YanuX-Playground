@@ -2,9 +2,6 @@
   "name": "yanux-calculator",
   "version": "0.1.0",
   "private": true,
-  "dependencies": {
-    "jsrsasign": "^8.0.12"
-  },
   "scripts": {
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",
@@ -26,6 +23,7 @@
       "last 1 safari version"
     ]
   },
+  "dependencies": {},
   "devDependencies": {
     "@yanux/coordinator": "^1.0.0",
     "base64-arraybuffer": "^0.2.0",
@@ -33,6 +31,7 @@
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.2",
     "enzyme-to-json": "^3.4.3",
+    "jsrsasign": "^8.0.12",
     "query-string": "^6.9.0",
     "randombytes": "^2.1.0",
     "react": "^16.12.0",

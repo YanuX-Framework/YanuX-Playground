@@ -56,13 +56,12 @@ const updateComponents = component => {
             const proxemics = coordinator.proxemics.state
             componentsRuleEngine.proxemics = proxemics
             componentsRuleEngine.instances = activeInstances
-            const activeInstancesDeviceUuids = [...new Set(activeInstances.map(actInst => actInst.device.deviceUuid))]
-            componentsRuleEngine.run(activeInstancesDeviceUuids).then(res => {
+            componentsRuleEngine.run().then(res => {
                 console.log('[YXCCRE] YanuX Coordinator Components Rule Engine')
                 console.log('[YXCCRE] Proxemics:', componentsRuleEngine.proxemics)
                 console.log('[YXCCRE] Instances:', componentsRuleEngine.instances)
                 console.log('[YXCCRE] Result:', res)
-                component.props.configureComponents(res[componentsRuleEngine.localDeviceUuid].componentsConfig)
+                component.props.configureComponents(res.componentsConfig)
             }).catch(err => console.error('[Components Rule Engine] Error:', err))
         }).catch(err => console.error(err));
     }

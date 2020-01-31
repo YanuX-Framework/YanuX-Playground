@@ -62,7 +62,10 @@ const updateComponents = component => {
                 console.log('[YXCCRE] Instances:', componentsRuleEngine.instances)
                 console.log('[YXCCRE] Result:', res)
                 component.props.configureComponents(res.componentsConfig)
-            }).catch(err => console.error('[Components Rule Engine] Error:', err))
+                return coordinator.setComponentDistribution(true, res.componentsConfig)
+            }).then(instance => {
+                console.log('[YXCCRE] Instance:', instance)
+            }).catch(err => console.error('[YXCCRE] Error:', err))
         }).catch(err => console.error(err));
     }
 }
@@ -85,7 +88,7 @@ const proxemicsSubscriptionHandler = component => (data, eventType) => {
 
 const instancesSubscriptionHandler = component => (data, eventType) => {
     console.log(
-        'Inatances Subscription Handler Data:', data,
+        'Instances Subscription Handler Data:', data,
         'Event Type:', eventType
     )
     updateComponents(component)

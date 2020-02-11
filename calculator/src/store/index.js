@@ -54,6 +54,10 @@ export const getComponentsConfig = state => {
   return state.yanuxCoordinator.componentsConfig
 }
 
+export const getInstancesComponentsDistribution = state => {
+  return state.yanuxCoordinator.instancesComponentsDistribution
+}
+
 export const isCoordinatorReady = state => {
   return state.yanuxCoordinator.connected
 }

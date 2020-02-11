@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import { setValues, calculate, deleteLastEntry, clear, evaluateExpression } from './store/actions/calculate'
 import { initializeAuth, logout } from './store/actions/authenticate'
-import { connected, configureComponents } from './store/actions/yanux'
+import { connected, configureComponents, instanceComponentsDistributed } from './store/actions/yanux'
 
 import Authentication from './components/authentication'
 import Calculator from './components/calculator'
@@ -18,13 +18,15 @@ export class App extends Component {
   render() {
     return (
       <React.Fragment>
-        <Yanux.Coordinator {...this.props} />
         <div className="header">
           <Authentication.Login {...this.props} />
         </div>
         <div className="calculator">
           <Calculator.Screen {...this.props} />
           <Calculator.Keypad {...this.props} />
+        </div>
+        <div className="footer">
+          <Yanux.Coordinator {...this.props} />
         </div>
       </React.Fragment>
     );
@@ -40,6 +42,7 @@ const mapStateToProps = state => {
     coordinator: store.getCoordinator(state),
     componentsRuleEngine: store.getComponentsRuleEngine(state),
     componentsConfig: store.getComponentsConfig(state),
+    instancesComponentsDistribution: store.getInstancesComponentsDistribution(state),
     expression: store.getExpression(state),
     total: store.getTotal(state)
   }
@@ -58,6 +61,9 @@ const mapDispatchToProps = dispatch => {
     },
     configureComponents: config => {
       dispatch(configureComponents(config))
+    },
+    instanceComponentsDistributed: config => {
+      dispatch(instanceComponentsDistributed(config))
     },
     setValues: (expression, total) => {
       dispatch(setValues(expression, total))

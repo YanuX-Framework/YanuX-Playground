@@ -31,7 +31,15 @@ export default class Coordinator extends React.Component {
                     {this.props.idToken ? <div className="text">Loading</div> : null}
                 </div>
             )
-        } else { return null }
+        } else {
+            return (
+                <div className="components-distribution">
+                    <yanux-components-distribution
+                        instanceId={this.props.coordinator.instance.id}
+                        componentsDistribution={JSON.stringify(this.props.instancesComponentsDistribution)} />
+                </div>
+            )
+        }
     }
 }
 
@@ -63,8 +71,10 @@ const updateComponents = component => {
                 console.log('[YXCCRE] Result:', res)
                 component.props.configureComponents(res.componentsConfig)
                 return coordinator.setComponentDistribution(true, res.componentsConfig)
-            }).then(instance => {
-                console.log('[YXCCRE] Instance:', instance)
+            }).then(() => {
+                return coordinator.getActiveInstances()
+            }).then(activeInstances => {
+                component.props.instanceComponentsDistributed(activeInstances)
             }).catch(err => console.error('[YXCCRE] Error:', err))
         }).catch(err => console.error(err));
     }

@@ -43,7 +43,9 @@ export default (state = initialState(), action) => {
     switch (action.type) {
         case types.LOGOUT:
             localStorage.clear()
+            const localDeviceUrl = sessionStorage.getItem('local_device_url')
             sessionStorage.clear()
+            sessionStorage.setItem('local_device_url', localDeviceUrl)
             return Object.assign({}, initialState(), {
                 error: action.error
             });

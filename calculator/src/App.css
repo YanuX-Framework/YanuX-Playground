@@ -141,6 +141,11 @@ a:active.header-button {
   background-color: #7777;
 }
 
+.components-distribution yanux-components-distribution {
+  margin-right: auto;
+  margin-left: auto;
+}
+
 .overlay .text{
   position: absolute;
   top: 50%;

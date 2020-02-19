@@ -82,35 +82,3 @@ export const initializeAuth = () => {
         initializer()
     }
 }
-
-// -----------------------------------------------------------------------------
-// UNUSED SNIPPETS
-// -----------------------------------------------------------------------------
-/*
-else if (state.authentication.refreshToken) {
-    dispatch(exchangingRefreshToken())
-    dispatch(exchangedRefreshToken(state.authentication.refreshToken, await refreshToken(state.authentication.refreshToken)))
-}
-*/
-// -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
-/*
-const refreshToken = async refreshToken => {
-    const response = await fetch(
-        `${authenticationConfig.oauth2_authentication_server}` +
-        `${authenticationConfig.oauth2_authentication_server_token_endpoint}`, {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            grant_type: 'refresh_token',
-            client_id: authenticationConfig.oauth2_client_id,
-            refresh_token: refreshToken,
-        })
-    })
-    return response.json()
-}
-*/
-// -----------------------------------------------------------------------------

@@ -4,14 +4,14 @@ export default class Coordinator extends React.Component {
 
     constructor(props) {
         super(props)
-        this.yanuxCoordinatorResourceSubscriptionHandler = this._resourceSubscriptionHandler()
-        this.yanuxCoordinatorProxemicsSubscriptionHandler = this._proxemicsSubscriptionHandler()
-        this.yanuxCoordinatorInstancesSubscriptionHandler = this._instancesSubscriptionHandler()
-        this.yanuxCoordinatorEventsSubcriptionHandler = this._eventsSubcriptionHandler()
-        this.yanuxCoordinatorReconnectSubscriptionHandler = this._reconnectSubscriptionHandler()
+        this.yanuxCoordinatorResourceSubscriptionHandler = this.__resourceSubscriptionHandler()
+        this.yanuxCoordinatorProxemicsSubscriptionHandler = this.__proxemicsSubscriptionHandler()
+        this.yanuxCoordinatorInstancesSubscriptionHandler = this.__instancesSubscriptionHandler()
+        this.yanuxCoordinatorEventsSubcriptionHandler = this.__eventsSubcriptionHandler()
+        this.yanuxCoordinatorReconnectSubscriptionHandler = this.__reconnectSubscriptionHandler()
         this.yanuxComponentsDistributionRef = React.createRef();
-        this.yanuxComponentsDistributionUpdatedComponentsDistribution = this._updatedComponentsDistribution()
-        this.yanuxComponentsDistributionResetAutoComponentsDistribution = this._resetAutoComponentsDistribution()
+        this.yanuxComponentsDistributionUpdatedComponentsDistribution = this.__updatedComponentsDistribution()
+        this.yanuxComponentsDistributionResetAutoComponentsDistribution = this.__resetAutoComponentsDistribution()
     }
 
     componentDidUpdate(prevProps) {
@@ -43,7 +43,7 @@ export default class Coordinator extends React.Component {
             )
             this.yanuxComponentsDistributionRef.current.addEventListener(
                 'reset-auto-components-distribution',
-                this.yanuxComponentsDistributionUpdatedComponentsDistribution
+                this.yanuxComponentsDistributionResetAutoComponentsDistribution
             )
         }
     }
@@ -55,7 +55,7 @@ export default class Coordinator extends React.Component {
             )
             this.yanuxComponentsDistributionRef.current.removeEventListener(
                 'reset-auto-components-distribution',
-                this.yanuxComponentsDistributionUpdatedComponentsDistribution
+                this.yanuxComponentsDistributionResetAutoComponentsDistribution
             )
         }
     }
@@ -100,7 +100,7 @@ export default class Coordinator extends React.Component {
                     //TODO:
                     //I should probably find a way to make this pattern something that is "promoted" by the library/framework itself. 
                     //At the very least I should "virtually" rename "_id" to "id".
-                    //I will probably just make a "blind" copy of "_id" into "id" so that it is backwards compatible
+                    //I will probably just make a "blind" copy of "_id" into "id" so that it is backwards compatible.
                     const localInstance = activeInstances.find(i => i._id === coordinator.instance.id)
                     console.log('[YXCCRE] YanuX Coordinator Manual Component Distribution:', activeInstances)
                     console.log('[YXCCRE] Local Instance:', localInstance)
@@ -108,27 +108,38 @@ export default class Coordinator extends React.Component {
                         this.props.configureComponents(localInstance.componentsDistribution.components)
                     }
                     this.props.instanceComponentsDistributed(activeInstances)
-                } else if (componentsRuleEngine) {
-                    componentsRuleEngine.proxemics = coordinator.proxemics.state
-                    componentsRuleEngine.instances = activeInstances
-                    componentsRuleEngine.run().then(res => {
-                        console.log('[YXCCRE] YanuX Coordinator Components Rule Engine')
-                        console.log('[YXCCRE] Proxemics:', componentsRuleEngine.proxemics)
-                        console.log('[YXCCRE] Instances:', componentsRuleEngine.instances)
-                        console.log('[YXCCRE] Result:', res)
-                        this.props.configureComponents(res.componentsConfig)
-                        return coordinator.setComponentDistribution(res.componentsConfig, true)
-                    }).then(() => {
-                        return coordinator.getActiveInstances()
-                    }).then(activeInstances => {
-                        this.props.instanceComponentsDistributed(activeInstances)
-                    }).catch(err => console.error('[YXCCRE] Error:', err))
+                } else if (componentsRuleEngine && coordinator.instance && coordinator.instance.id) {
+                    this._distributeComponents(coordinator.instance.id, activeInstances)
                 }
             }).catch(err => console.error(err));
         }
     }
 
-    _resourceSubscriptionHandler() {
+    _distributeComponents(instanceId, activeInstances, ignoreManual = false) {
+        const coordinator = this.props.coordinator
+        const componentsRuleEngine = this.props.componentsRuleEngine
+        if (coordinator && componentsRuleEngine) {
+            componentsRuleEngine.proxemics = coordinator.proxemics.state
+            componentsRuleEngine.instances = activeInstances
+            componentsRuleEngine.run(ignoreManual).then(res => {
+                console.log('[YXCCRE] YanuX Coordinator Components Rule Engine')
+                console.log('[YXCCRE] Instance Id', instanceId)
+                console.log('[YXCCRE] Proxemics:', componentsRuleEngine.proxemics)
+                console.log('[YXCCRE] Instances:', componentsRuleEngine.instances)
+                console.log('[YXCCRE] Result:', res)
+                if (coordinator.instance && coordinator.instance.id === instanceId) {
+                    this.props.configureComponents(res.componentsConfig)
+                }
+                return coordinator.setComponentDistribution(res.componentsConfig, res.auto, instanceId)
+            }).then(() => {
+                return coordinator.getActiveInstances()
+            }).then(activeInstances => {
+                this.props.instanceComponentsDistributed(activeInstances)
+            }).catch(err => console.error('[YXCCRE] Error:', err))
+        }
+    }
+
+    __resourceSubscriptionHandler() {
         const self = this
         return (data, eventType) => {
             console.log(
@@ -139,7 +150,7 @@ export default class Coordinator extends React.Component {
         }
     }
 
-    _proxemicsSubscriptionHandler() {
+    __proxemicsSubscriptionHandler() {
         const self = this
         return (data, eventType) => {
             console.log(
@@ -150,7 +161,7 @@ export default class Coordinator extends React.Component {
         }
     }
 
-    _instancesSubscriptionHandler() {
+    __instancesSubscriptionHandler() {
         const self = this
         return (data, eventType) => {
             console.log(
@@ -161,15 +172,14 @@ export default class Coordinator extends React.Component {
         }
     }
 
-    _eventsSubcriptionHandler() {
-        //const self = this
+    __eventsSubcriptionHandler() {
         return (data, eventType) => console.log(
             'Events Subscription Handler Data:', data,
             'Event Type:', eventType
         )
     }
 
-    _reconnectSubscriptionHandler() {
+    __reconnectSubscriptionHandler() {
         const self = this
         return (state, proxemics) => {
             console.log(
@@ -180,7 +190,7 @@ export default class Coordinator extends React.Component {
         }
     }
 
-    _updatedComponentsDistribution() {
+    __updatedComponentsDistribution() {
         const self = this
         return e => {
             const coordinator = self.props.coordinator
@@ -192,7 +202,7 @@ export default class Coordinator extends React.Component {
                         .keys(componentsDistribution)
                         .map(instanceId => coordinator.setComponentDistribution(
                             componentsDistribution[instanceId].components,
-                            false,
+                            componentsDistribution[instanceId].auto,
                             instanceId
                         ))
                 ).then(results => {
@@ -204,9 +214,15 @@ export default class Coordinator extends React.Component {
         }
     }
 
-    _resetAutoComponentsDistribution() {
-        //const self = this
-        return e => console.log('[YXCDE] Reset Auto Components Distribution:', e.detail)
+    __resetAutoComponentsDistribution() {
+        const self = this
+        return e => {
+            const coordinator = self.props.coordinator
+            coordinator.getActiveInstances().then(activeInstances => {
+                self._distributeComponents(e.detail.instanceId, activeInstances, true)
+            }).catch(err => console.error(err));
+            console.log('[YXCDE] Reset Auto Components Distribution:', e.detail)
+        }
     }
 
 }

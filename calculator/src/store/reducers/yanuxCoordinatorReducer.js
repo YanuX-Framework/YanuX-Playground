@@ -41,7 +41,7 @@ export default (state = initialState, action) => {
             )
             return Object.assign({}, state);
         case types.CONNECTED:
-            state.componentsRuleEngine = new ComponentsRuleEngine(state.coordinator.device.deviceUuid, state.componentsRestrictions)
+            state.componentsRuleEngine = new ComponentsRuleEngine(state.coordinator.instance.instanceUuid, state.coordinator.device.deviceUuid, state.componentsRestrictions)
             return Object.assign({}, state, {
                 connected: true
             })
@@ -50,7 +50,7 @@ export default (state = initialState, action) => {
             return Object.assign({}, state)
         case types.INSTANCES_COMPONENTS_DISTRIBUTED:
             //TODO: Perhaps this conversion from plain instances to InstancesComponentsDistribution could be done internally by the (Feathers)Coordinator.
-            const instancesComponentsDistribution =  new InstancesComponentsDistribution(action.instancesComponentsDistribution)
+            const instancesComponentsDistribution = new InstancesComponentsDistribution(action.instancesComponentsDistribution)
             state.instancesComponentsDistribution = instancesComponentsDistribution
             return Object.assign({}, state)
         default:

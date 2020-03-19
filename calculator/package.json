@@ -34,9 +34,9 @@
     "jsrsasign": "^8.0.12",
     "query-string": "^6.11.1",
     "randombytes": "^2.1.0",
-    "react": "^16.13.0",
+    "react": "^16.13.1",
     "react-app-rewired": "^2.1.5",
-    "react-dom": "^16.13.0",
+    "react-dom": "^16.13.1",
     "react-redux": "^7.2.0",
     "react-scripts": "^3.4.0",
     "react-textfit": "^1.1.0",
@@ -44,7 +44,7 @@
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.3.0",
     "sha.js": "^2.4.11",
-    "sinon": "^9.0.0",
+    "sinon": "^9.0.1",
     "source-map-loader": "^0.2.4"
   }
 }

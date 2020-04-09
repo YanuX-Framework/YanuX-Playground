@@ -44,7 +44,7 @@
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.3.0",
     "sha.js": "^2.4.11",
-    "sinon": "^9.0.1",
+    "sinon": "^9.0.2",
     "source-map-loader": "^0.2.4"
   }
 }

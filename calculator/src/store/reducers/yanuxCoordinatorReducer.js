@@ -30,29 +30,41 @@ export default (state = initialState, action) => {
         case types.LOGOUT:
             return Object.assign({}, initialState);
         case types.READY_TO_CONNECT:
-            state.coordinator = new FeathersCoordinator(
-                yanuxBrokerConfig.broker_url,
-                state.localDeviceUrl,
-                yanuxBrokerConfig.app,
-                new Credentials('yanux', [
-                    action.accessToken,
-                    yanuxBrokerConfig.app
-                ])
-            )
-            return Object.assign({}, state);
-        case types.CONNECTED:
-            state.componentsRuleEngine = new ComponentsRuleEngine(state.coordinator.instance.instanceUuid, state.coordinator.device.deviceUuid, state.componentsRestrictions)
             return Object.assign({}, state, {
-                connected: true
+                coordinator: new FeathersCoordinator(
+                    yanuxBrokerConfig.broker_url,
+                    state.localDeviceUrl,
+                    yanuxBrokerConfig.app,
+                    new Credentials('yanux', [
+                        action.accessToken,
+                        yanuxBrokerConfig.app
+                    ])
+                )
             })
+        case types.CONNECTED:
+            return Object.assign({}, state, {
+                connected: true,
+                componentsRuleEngine: new ComponentsRuleEngine(
+                    state.coordinator.instance.instanceUuid,
+                    state.coordinator.device.deviceUuid,
+                    state.componentsRestrictions
+                )
+            })
+        case types.RESOURCES_RETRIEVED:
+            return Object.assign({}, state, {
+                resources: action.resources
+            });
         case types.CONFIGURE_COMPONENTS:
-            state.componentsConfig = action.componentsConfig
-            return Object.assign({}, state)
+            return Object.assign({}, state, {
+                componentsConfig: action.componentsConfig
+            })
         case types.INSTANCES_COMPONENTS_DISTRIBUTED:
             //TODO: Perhaps this conversion from plain instances to InstancesComponentsDistribution could be done internally by the (Feathers)Coordinator.
-            const instancesComponentsDistribution = new InstancesComponentsDistribution(action.instancesComponentsDistribution)
-            state.instancesComponentsDistribution = instancesComponentsDistribution
-            return Object.assign({}, state)
+            return Object.assign({}, state, {
+                instancesComponentsDistribution: new InstancesComponentsDistribution(
+                    action.instancesComponentsDistribution
+                )
+            })
         default:
             return state
     }

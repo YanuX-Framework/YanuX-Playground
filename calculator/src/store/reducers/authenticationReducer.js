@@ -50,14 +50,16 @@ export default (state = initialState(), action) => {
                 error: action.error
             });
         case types.SET_ID_TOKEN:
-            state.idToken = action.json
-            localStorage.setItem('id_token', JSON.stringify(state.idToken))
-            return Object.assign({}, state);
+            const idToken = action.json
+            localStorage.setItem('id_token', JSON.stringify(idToken))
+            return Object.assign({}, state, { idToken });
         case types.SET_AUTHORIZATION_CODE:
-            state.authorizationCode = action.code
-            return Object.assign({}, state);
+            return Object.assign({}, state, {
+                authorizationCode: action.code
+            });
         case types.EXCHANGED_AUTHORIZATION_CODE:
         case types.EXCHANGED_REFRESH_TOKEN:
+            const tempState = {}
             //Check if all information needed is available
             if (!action.json.error &&
                 action.json.expires_in &&
@@ -65,23 +67,23 @@ export default (state = initialState(), action) => {
                 action.json.refresh_token &&
                 action.json.token_type) {
                 //Store it into the application state
-                state.authTimestamp = Math.floor(Date.now() / 1000);
-                state.expiresIn = action.json.expires_in
-                state.accessToken = action.json.access_token
-                state.refreshToken = action.json.refresh_token
-                state.tokenType = action.json.token_type
+                tempState.authTimestamp = Math.floor(Date.now() / 1000);
+                tempState.expiresIn = action.json.expires_in
+                tempState.accessToken = action.json.access_token
+                tempState.refreshToken = action.json.refresh_token
+                tempState.tokenType = action.json.token_type
                 //Persist it into Local Storage
-                localStorage.setItem('auth_timestamp', state.authTime)
-                localStorage.setItem('auth_expires_in', state.expiresIn)
-                localStorage.setItem('access_token', state.accessToken)
-                localStorage.setItem('refresh_token', state.refreshToken)
-                localStorage.setItem('token_type', state.tokenType)
+                localStorage.setItem('auth_timestamp', tempState.authTime)
+                localStorage.setItem('auth_expires_in', tempState.expiresIn)
+                localStorage.setItem('access_token', tempState.accessToken)
+                localStorage.setItem('refresh_token', tempState.refreshToken)
+                localStorage.setItem('token_type', tempState.tokenType)
             } else {
                 //If there was an error save it for further processing
-                state.error = new CustomError(action.json.error, action.json.error_description)
+                tempState.error = new CustomError(action.json.error, action.json.error_description)
             }
             window.history.pushState('', document.title, window.location.pathname + window.location.search)
-            return Object.assign({}, state);
+            return Object.assign({}, state, tempState);
         default:
             return state
     }

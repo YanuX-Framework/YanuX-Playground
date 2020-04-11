@@ -9,7 +9,14 @@ export default class Coordinator extends React.Component {
         this.yanuxCoordinatorInstancesSubscriptionHandler = this.__instancesSubscriptionHandler()
         this.yanuxCoordinatorEventsSubcriptionHandler = this.__eventsSubcriptionHandler()
         this.yanuxCoordinatorReconnectSubscriptionHandler = this.__reconnectSubscriptionHandler()
-        this.yanuxComponentsDistributionRef = React.createRef();
+
+        this.yanuxResourceManagementRef = React.createRef();
+        this.yanuxResourceManagementResourceSelected = this.__resourceSelected()
+        this.yanuxResourceManagementCreateResource = this.__createResource()
+        this.yanuxResourceManagementShareResource = this.__shareResource()
+        this.yanuxResourceManagementDeleteResource = this.__deleteResource()
+
+        this.yanuxComponentsDistributionRef = React.createRef()
         this.yanuxComponentsDistributionUpdatedComponentsDistribution = this.__updatedComponentsDistribution()
         this.yanuxComponentsDistributionResetAutoComponentsDistribution = this.__resetAutoComponentsDistribution()
     }
@@ -25,6 +32,7 @@ export default class Coordinator extends React.Component {
                 console.log('Initial Proxemics', initialProxemics)
                 this.yanuxCoordinatorResourceSubscriptionHandler(initialState)
                 this.props.connected(initialState, initialProxemics)
+                this.updateResources()
                 this.updateComponents()
             }).catch(err => {
                 console.error('Error Connecting to YanuX Broker', err)
@@ -36,6 +44,26 @@ export default class Coordinator extends React.Component {
             coordinator.subscribeEvents(this.yanuxCoordinatorEventsSubcriptionHandler)
             coordinator.subscribeReconnects(this.yanuxCoordinatorReconnectSubscriptionHandler)
         }
+
+        if (this.yanuxResourceManagementRef.current) {
+            this.yanuxResourceManagementRef.current.addEventListener(
+                'resource-selected',
+                this.yanuxResourceManagementResourceSelected
+            )
+            this.yanuxResourceManagementRef.current.addEventListener(
+                'create-resource',
+                this.yanuxResourceManagementCreateResource
+            )
+            this.yanuxResourceManagementRef.current.addEventListener(
+                'share-resource',
+                this.yanuxResourceManagementShareResource
+            )
+            this.yanuxResourceManagementRef.current.addEventListener(
+                'delete-resource',
+                this.yanuxResourceManagementDeleteResource
+            )
+        }
+
         if (this.yanuxComponentsDistributionRef.current) {
             this.yanuxComponentsDistributionRef.current.addEventListener(
                 'updated-components-distribution',
@@ -68,13 +96,32 @@ export default class Coordinator extends React.Component {
             )
         } else {
             return (
-                <div className="components-distribution">
-                    <yanux-components-distribution
-                        ref={this.yanuxComponentsDistributionRef}
-                        instanceId={this.props.coordinator.instance.id}
-                        componentsDistribution={JSON.stringify(this.props.instancesComponentsDistribution)} />
-                </div>
+                <React.Fragment>
+                    <div class="resource-management">
+                        <yanux-resource-management
+                            ref={this.yanuxResourceManagementRef}
+                            resourceId={this.props.resourceId || this.props.coordinator.resource.id}
+                            resources={JSON.stringify(this.props.resources)} />
+                    </div>
+                    <div className="components-distribution">
+                        <yanux-components-distribution
+                            ref={this.yanuxComponentsDistributionRef}
+                            instanceId={this.props.coordinator.instance.id}
+                            componentsDistribution={JSON.stringify(this.props.instancesComponentsDistribution)} />
+                    </div>
+                </React.Fragment>
             )
+        }
+    }
+
+    updateResources() {
+        const coordinator = this.props.coordinator
+        if (coordinator) {
+            coordinator.getResources()
+                .then(resources => {
+                    console.log('[YXCRM] YanuX Coordinator Resources:', resources)
+                    this.props.resourcesRetrieved(resources)
+                }).catch(err => console.log(err))
         }
     }
 
@@ -187,6 +234,39 @@ export default class Coordinator extends React.Component {
                 'Proxemics:', proxemics
             )
             self.updateState(state)
+        }
+    }
+
+    __resourceSelected() {
+        const self = this
+        return e => {
+            console.log('[YXRME] Resource Selected:', e.detail)
+        }
+    }
+
+    __createResource() {
+        const self = this
+        return e => {
+            console.log('[YXRME] Create Resource:', e.detail)
+            const coordinator = self.props.coordinator
+            coordinator.createResource(e.detail.resourceName)
+                .then(resource => {
+                    console.log('[YXRME] Resource Created:', resource)
+                }).catch(err => console.error(err))
+        }
+    }
+
+    __shareResource() {
+        const self = this
+        return e => {
+            console.log('[YXRME] Share Resource:', e.detail)
+        }
+    }
+
+    __deleteResource() {
+        const self = this
+        return e => {
+            console.log('[YXRME] Delete Resource:', e.detail)
         }
     }
 

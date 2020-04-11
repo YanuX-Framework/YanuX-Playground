@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import { setValues, calculate, deleteLastEntry, clear, evaluateExpression } from './store/actions/calculate'
 import { initializeAuth, logout } from './store/actions/authenticate'
-import { connected, configureComponents, instanceComponentsDistributed } from './store/actions/yanux'
+import { connected, resourcesRetrieved, configureComponents, instanceComponentsDistributed } from './store/actions/yanux'
 
 import Authentication from './components/authentication'
 import Calculator from './components/calculator'
@@ -40,6 +40,7 @@ const mapStateToProps = state => {
     authenticationError: store.getAuthenticationError(state),
     isCoordinatorReady: store.isCoordinatorReady(state),
     coordinator: store.getCoordinator(state),
+    resources: store.getResources(state),
     componentsRuleEngine: store.getComponentsRuleEngine(state),
     componentsConfig: store.getComponentsConfig(state),
     instancesComponentsDistribution: store.getInstancesComponentsDistribution(state),
@@ -58,6 +59,9 @@ const mapDispatchToProps = dispatch => {
     },
     connected: (state, proxemics) => {
       dispatch(connected(state, proxemics))
+    },
+    resourcesRetrieved: resources => {
+      dispatch(resourcesRetrieved(resources))
     },
     configureComponents: config => {
       dispatch(configureComponents(config))

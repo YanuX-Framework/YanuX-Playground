@@ -1,3 +1,4 @@
+import './Button.css'
 import React from 'react';
 import { operators } from '../../utils/constants'
 export default ({ onButtonClick, buttonKey }) => {

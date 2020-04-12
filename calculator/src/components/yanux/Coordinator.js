@@ -1,3 +1,4 @@
+import './Coordinator.css';
 import React from 'react'
 
 export default class Coordinator extends React.Component {
@@ -97,7 +98,7 @@ export default class Coordinator extends React.Component {
         } else {
             return (
                 <React.Fragment>
-                    <div class="resource-management">
+                    <div className="resource-management">
                         <yanux-resource-management
                             ref={this.yanuxResourceManagementRef}
                             resourceId={this.props.resourceId || this.props.coordinator.resource.id}

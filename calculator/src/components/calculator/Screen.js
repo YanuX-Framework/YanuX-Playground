@@ -1,6 +1,8 @@
 
+import './Screen.css';
 import React from 'react';
 import { Textfit } from 'react-textfit';
+
 export default (props) => {
     if (props.componentsConfig && props.componentsConfig.screen) {
         return (

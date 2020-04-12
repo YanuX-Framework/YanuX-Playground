@@ -1,0 +1,10 @@
+.keypad {
+  display: grid;
+  flex: 4 0.25;
+}
+
+.block {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+  

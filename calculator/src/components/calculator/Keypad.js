@@ -1,4 +1,5 @@
 
+import './Keypad.css'
 import React, { Component } from 'react';
 import { keypadKeys } from '../../utils/constants';
 import Calculator from '../calculator'

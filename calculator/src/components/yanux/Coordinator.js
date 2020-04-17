@@ -1,25 +1,38 @@
-import './Coordinator.css';
+import './Coordinator.css'
 import React from 'react'
+import ReactModal from 'react-modal'
 
 export default class Coordinator extends React.Component {
 
     constructor(props) {
         super(props)
-        this.yanuxCoordinatorResourceSubscriptionHandler = this.__resourceSubscriptionHandler()
-        this.yanuxCoordinatorProxemicsSubscriptionHandler = this.__proxemicsSubscriptionHandler()
-        this.yanuxCoordinatorInstancesSubscriptionHandler = this.__instancesSubscriptionHandler()
-        this.yanuxCoordinatorEventsSubcriptionHandler = this.__eventsSubcriptionHandler()
-        this.yanuxCoordinatorReconnectSubscriptionHandler = this.__reconnectSubscriptionHandler()
 
-        this.yanuxResourceManagementRef = React.createRef();
-        this.yanuxResourceManagementResourceSelected = this.__resourceSelected()
-        this.yanuxResourceManagementCreateResource = this.__createResource()
-        this.yanuxResourceManagementShareResource = this.__shareResource()
-        this.yanuxResourceManagementDeleteResource = this.__deleteResource()
+        this.state = {
+            alert: {
+                title: 'Alert',
+                message: 'Something happened',
+                show: false
+            }
+        }
 
-        this.yanuxComponentsDistributionRef = React.createRef()
-        this.yanuxComponentsDistributionUpdatedComponentsDistribution = this.__updatedComponentsDistribution()
-        this.yanuxComponentsDistributionResetAutoComponentsDistribution = this.__resetAutoComponentsDistribution()
+        this.handleOpenModal = this.handleOpenModal.bind(this)
+        this.handleCloseModal = this.handleCloseModal.bind(this)
+
+        this.resourceSubscriptionHandler = this.resourceSubscriptionHandler.bind(this)
+        this.proxemicsSubscriptionHandler = this.proxemicsSubscriptionHandler.bind(this)
+        this.instancesSubscriptionHandler = this.instancesSubscriptionHandler.bind(this)
+        this.eventsSubcriptionHandler = this.eventsSubcriptionHandler.bind(this)
+        this.reconnectSubscriptionHandler = this.reconnectSubscriptionHandler.bind(this)
+
+        this.resourceManagementRef = React.createRef();
+        this.resourceSelected = this.resourceSelected.bind(this)
+        this.createResource = this.createResource.bind(this)
+        this.shareResource = this.shareResource.bind(this)
+        this.deleteResource = this.deleteResource.bind(this)
+
+        this.componentsDistributionRef = React.createRef()
+        this.updatedComponentsDistribution = this.updatedComponentsDistribution.bind(this)
+        this.resetAutoComponentsDistribution = this.resetAutoComponentsDistribution.bind(this)
     }
 
     componentDidUpdate(prevProps) {
@@ -31,7 +44,7 @@ export default class Coordinator extends React.Component {
                 console.log('Connected to YanuX Broker')
                 console.log('Initial State', initialState)
                 console.log('Initial Proxemics', initialProxemics)
-                this.yanuxCoordinatorResourceSubscriptionHandler(initialState)
+                this.resourceSubscriptionHandler(initialState)
                 this.props.connected(initialState, initialProxemics)
                 this.updateResources()
                 this.updateComponents()
@@ -39,55 +52,57 @@ export default class Coordinator extends React.Component {
                 console.error('Error Connecting to YanuX Broker', err)
                 this.props.logout()
             })
-            coordinator.subscribeResource(this.yanuxCoordinatorResourceSubscriptionHandler)
-            coordinator.subscribeProxemics(this.yanuxCoordinatorProxemicsSubscriptionHandler)
-            coordinator.subscribeInstances(this.yanuxCoordinatorInstancesSubscriptionHandler)
-            coordinator.subscribeEvents(this.yanuxCoordinatorEventsSubcriptionHandler)
-            coordinator.subscribeReconnects(this.yanuxCoordinatorReconnectSubscriptionHandler)
+            coordinator.subscribeResource(this.resourceSubscriptionHandler)
+            coordinator.subscribeProxemics(this.proxemicsSubscriptionHandler)
+            coordinator.subscribeInstances(this.instancesSubscriptionHandler)
+            coordinator.subscribeEvents(this.eventsSubcriptionHandler)
+            coordinator.subscribeReconnects(this.reconnectSubscriptionHandler)
         }
 
-        if (this.yanuxResourceManagementRef.current) {
-            this.yanuxResourceManagementRef.current.addEventListener(
+        if (this.resourceManagementRef.current) {
+            this.resourceManagementRef.current.addEventListener(
                 'resource-selected',
-                this.yanuxResourceManagementResourceSelected
+                this.resourceSelected
             )
-            this.yanuxResourceManagementRef.current.addEventListener(
+            this.resourceManagementRef.current.addEventListener(
                 'create-resource',
-                this.yanuxResourceManagementCreateResource
+                this.createResource
             )
-            this.yanuxResourceManagementRef.current.addEventListener(
+            this.resourceManagementRef.current.addEventListener(
                 'share-resource',
-                this.yanuxResourceManagementShareResource
+                this.shareResource
             )
-            this.yanuxResourceManagementRef.current.addEventListener(
+            this.resourceManagementRef.current.addEventListener(
                 'delete-resource',
-                this.yanuxResourceManagementDeleteResource
+                this.deleteResource
             )
         }
 
-        if (this.yanuxComponentsDistributionRef.current) {
-            this.yanuxComponentsDistributionRef.current.addEventListener(
+        if (this.componentsDistributionRef.current) {
+            this.componentsDistributionRef.current.addEventListener(
                 'updated-components-distribution',
-                this.yanuxComponentsDistributionUpdatedComponentsDistribution
+                this.updatedComponentsDistribution
             )
-            this.yanuxComponentsDistributionRef.current.addEventListener(
+            this.componentsDistributionRef.current.addEventListener(
                 'reset-auto-components-distribution',
-                this.yanuxComponentsDistributionResetAutoComponentsDistribution
+                this.resetAutoComponentsDistribution
             )
         }
     }
+
     componentWillUnmount() {
-        if (this.yanuxComponentsDistributionRef.current) {
-            this.yanuxComponentsDistributionRef.current.removeEventListener(
+        if (this.componentsDistributionRef.current) {
+            this.componentsDistributionRef.current.removeEventListener(
                 'updated-components-distribution',
-                this.yanuxComponentsDistributionUpdatedComponentsDistribution
+                this.updatedComponentsDistribution
             )
-            this.yanuxComponentsDistributionRef.current.removeEventListener(
+            this.componentsDistributionRef.current.removeEventListener(
                 'reset-auto-components-distribution',
-                this.yanuxComponentsDistributionResetAutoComponentsDistribution
+                this.resetAutoComponentsDistribution
             )
         }
     }
+
     render() {
         if (!this.props.isCoordinatorReady) {
             return (
@@ -100,19 +115,38 @@ export default class Coordinator extends React.Component {
                 <React.Fragment>
                     <div className="resource-management">
                         <yanux-resource-management
-                            ref={this.yanuxResourceManagementRef}
+                            ref={this.resourceManagementRef}
                             resourceId={this.props.resourceId || this.props.coordinator.resource.id}
                             resources={JSON.stringify(this.props.resources)} />
                     </div>
                     <div className="components-distribution">
                         <yanux-components-distribution
-                            ref={this.yanuxComponentsDistributionRef}
+                            ref={this.componentsDistributionRef}
                             instanceId={this.props.coordinator.instance.id}
                             componentsDistribution={JSON.stringify(this.props.instancesComponentsDistribution)} />
+                    </div>
+                    <div className="alert">
+                        <ReactModal
+                            isOpen={this.state.alert.show}
+                            contentLabel="Alert Dialog"
+                            onRequestClose={this.handleCloseModal}
+                            className="alert-content">
+                            <h3>{this.state.alert.title}</h3>
+                            <p>{this.state.alert.message}</p>
+                            <button className="alert-button" onClick={this.handleCloseModal}>OK</button>
+                        </ReactModal>
                     </div>
                 </React.Fragment>
             )
         }
+    }
+
+    handleOpenModal(title, message) {
+        this.setState({ alert: { title, message, show: true } });
+    }
+
+    handleCloseModal() {
+        this.setState({ alert: { show: false } });
     }
 
     updateResources() {
@@ -187,123 +221,104 @@ export default class Coordinator extends React.Component {
         }
     }
 
-    __resourceSubscriptionHandler() {
-        const self = this
-        return (data, eventType) => {
-            console.log(
-                'Resource Subscriber Handler Data:', data,
-                'Event Type:', eventType
-            )
-            self.updateState(data)
-        }
-    }
-
-    __proxemicsSubscriptionHandler() {
-        const self = this
-        return (data, eventType) => {
-            console.log(
-                'Proxemics Subscriber Handler Data:', data,
-                'Event Type:', eventType
-            )
-            self.updateComponents()
-        }
-    }
-
-    __instancesSubscriptionHandler() {
-        const self = this
-        return (data, eventType) => {
-            console.log(
-                'Instances Subscription Handler Data:', data,
-                'Event Type:', eventType
-            )
-            self.updateComponents(data)
-        }
-    }
-
-    __eventsSubcriptionHandler() {
-        return (data, eventType) => console.log(
-            'Events Subscription Handler Data:', data,
+    resourceSubscriptionHandler(data, eventType) {
+        console.log(
+            'Resource Subscriber Handler Data:', data,
             'Event Type:', eventType
         )
+        this.updateState(data)
     }
 
-    __reconnectSubscriptionHandler() {
-        const self = this
-        return (state, proxemics) => {
-            console.log(
-                'Reconnect Subscription Handler State:', state,
-                'Proxemics:', proxemics
-            )
-            self.updateState(state)
-        }
+    proxemicsSubscriptionHandler(data, eventType) {
+        console.log(
+            'Proxemics Subscriber Handler Data:', data,
+            'Event Type:', eventType
+        )
+        this.updateComponents()
     }
 
-    __resourceSelected() {
-        const self = this
-        return e => {
-            console.log('[YXRME] Resource Selected:', e.detail)
-        }
+    instancesSubscriptionHandler(data, eventType) {
+        console.log(
+            'Instances Subscription Handler Data:', data,
+            'Event Type:', eventType
+        )
+        this.updateComponents(data)
     }
 
-    __createResource() {
-        const self = this
-        return e => {
-            console.log('[YXRME] Create Resource:', e.detail)
-            const coordinator = self.props.coordinator
-            coordinator.createResource(e.detail.resourceName)
-                .then(resource => {
-                    console.log('[YXRME] Resource Created:', resource)
-                }).catch(err => console.error(err))
-        }
+    eventsSubcriptionHandler(data, eventType) {
+        console.log('Events Subscription Handler Data:', data, 'Event Type:', eventType)
     }
 
-    __shareResource() {
-        const self = this
-        return e => {
-            console.log('[YXRME] Share Resource:', e.detail)
-        }
+    reconnectSubscriptionHandler(state, proxemics) {
+        console.log(
+            'Reconnect Subscription Handler State:', state,
+            'Proxemics:', proxemics
+        )
+        this.updateState(state)
     }
 
-    __deleteResource() {
-        const self = this
-        return e => {
-            console.log('[YXRME] Delete Resource:', e.detail)
-        }
+    resourceSelected(e) {
+        console.log('[YXRME] Resource Selected:', e.detail)
     }
 
-    __updatedComponentsDistribution() {
-        const self = this
-        return e => {
-            const coordinator = self.props.coordinator
-            console.log('[YXCDE] Updated Components Distribution:', e.detail)
-            const componentsDistribution = e && e.detail && e.detail.componentsDistribution ? e.detail.componentsDistribution : null
-            if (coordinator && componentsDistribution) {
-                Promise.all(
-                    Object
-                        .keys(componentsDistribution)
-                        .map(instanceId => coordinator.setComponentDistribution(
-                            componentsDistribution[instanceId].components,
-                            componentsDistribution[instanceId].auto,
-                            instanceId
-                        ))
-                ).then(results => {
-                    console.log('[YXCDE] Updated Instances Based on the New Components Distribution:', results)
-                }).catch(e => {
-                    console.log('[YXCDE] Something went wrong while updating Instances based on the new Components Distribution:', e)
-                })
-            }
-        }
+    createResource(e) {
+        console.log('[YXRME] Create Resource:', e.detail)
+        const coordinator = this.props.coordinator
+        coordinator.createResource(e.detail.resourceName)
+            .then(resource => {
+                console.log('[YXRME] Resource Created:', resource)
+            }).catch(err => console.error(err))
     }
 
-    __resetAutoComponentsDistribution() {
-        const self = this
-        return e => {
-            const coordinator = self.props.coordinator
-            coordinator.getActiveInstances().then(activeInstances => {
-                self._distributeComponents(e.detail.instanceId, activeInstances, true)
-            }).catch(err => console.error(err));
-            console.log('[YXCDE] Reset Auto Components Distribution:', e.detail)
+    shareResource(e) {
+        console.log('[YXRME] Share Resource:', e.detail)
+        const coordinator = this.props.coordinator
+        coordinator.shareResource(e.detail.resourceId, e.detail.userEmail)
+            .then(resource => {
+                console.log('[YXRME] Resource Shared:', resource)
+            }).catch(err => {
+                this.handleOpenModal('Error', err.message)
+                console.error('[YXRME] Error Sharing Resource:', err)
+            })
+    }
+
+    deleteResource(e) {
+        console.log('[YXRME] Delete Resource:', e.detail)
+        const coordinator = this.props.coordinator
+        coordinator.deleteResource(e.detail.resourceId)
+            .then(resource => {
+                console.log('[YXRME] Resource Deleted:', resource)
+            }).catch(err => console.error(err))
+    }
+
+    updatedComponentsDistribution(e) {
+        const coordinator = this.props.coordinator
+        console.log('[YXCDE] Updated Components Distribution:', e.detail)
+        const componentsDistribution = e && e.detail && e.detail.componentsDistribution ? e.detail.componentsDistribution : null
+        if (coordinator && componentsDistribution) {
+            Promise.all(
+                Object
+                    .keys(componentsDistribution)
+                    .map(instanceId => coordinator.setComponentDistribution(
+                        componentsDistribution[instanceId].components,
+                        componentsDistribution[instanceId].auto,
+                        instanceId
+                    ))
+            ).then(results => {
+                console.log('[YXCDE] Updated Instances Based on the New Components Distribution:', results)
+            }).catch(e => {
+                console.log('[YXCDE] Something went wrong while updating Instances based on the new Components Distribution:', e)
+            })
         }
+
+    }
+
+    resetAutoComponentsDistribution(e) {
+        const coordinator = this.props.coordinator
+        coordinator.getActiveInstances().then(activeInstances => {
+            this._distributeComponents(e.detail.instanceId, activeInstances, true)
+        }).catch(err => console.error(err));
+        console.log('[YXCDE] Reset Auto Components Distribution:', e.detail)
     }
 
 }

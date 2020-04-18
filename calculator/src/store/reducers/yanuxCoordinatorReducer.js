@@ -53,7 +53,7 @@ export default (state = initialState, action) => {
         case types.RESOURCES_RETRIEVED:
             return Object.assign({}, state, {
                 resources: action.resources
-            });
+            })
         case types.CONFIGURE_COMPONENTS:
             return Object.assign({}, state, {
                 componentsConfig: action.componentsConfig

@@ -6,18 +6,12 @@ export default class Coordinator extends React.Component {
 
     constructor(props) {
         super(props)
-
-        this.state = {
-            alert: {
-                title: 'Alert',
-                message: 'Something happened',
-                show: false
-            }
-        }
+        this.state = { alert: { title: 'Alert', message: 'Message', show: false } }
 
         this.handleOpenModal = this.handleOpenModal.bind(this)
         this.handleCloseModal = this.handleCloseModal.bind(this)
 
+        this.resourcesSubscriptionHandler = this.resourcesSubscriptionHandler.bind(this)
         this.resourceSubscriptionHandler = this.resourceSubscriptionHandler.bind(this)
         this.proxemicsSubscriptionHandler = this.proxemicsSubscriptionHandler.bind(this)
         this.instancesSubscriptionHandler = this.instancesSubscriptionHandler.bind(this)
@@ -39,19 +33,19 @@ export default class Coordinator extends React.Component {
         const coordinator = this.props.coordinator
         if (coordinator && !prevProps.coordinator) {
             coordinator.init().then(results => {
-                const initialState = results[0];
-                const initialProxemics = results[1];
-                console.log('Connected to YanuX Broker')
-                console.log('Initial State', initialState)
-                console.log('Initial Proxemics', initialProxemics)
+                const [initialState, initialProxemics] = results
+                console.log('[YXC] Connected to YanuX Broker')
+                console.log('[YXC] Initial State', initialState)
+                console.log('[YXC] Initial Proxemics', initialProxemics)
                 this.resourceSubscriptionHandler(initialState)
                 this.props.connected(initialState, initialProxemics)
                 this.updateResources()
                 this.updateComponents()
             }).catch(err => {
-                console.error('Error Connecting to YanuX Broker', err)
+                console.error('[YXC] Error Connecting to YanuX Broker', err)
                 this.props.logout()
             })
+            coordinator.subscribeResources(this.resourcesSubscriptionHandler)
             coordinator.subscribeResource(this.resourceSubscriptionHandler)
             coordinator.subscribeProxemics(this.proxemicsSubscriptionHandler)
             coordinator.subscribeInstances(this.instancesSubscriptionHandler)
@@ -141,12 +135,14 @@ export default class Coordinator extends React.Component {
         }
     }
 
-    handleOpenModal(title, message) {
-        this.setState({ alert: { title, message, show: true } });
+    handleOpenModal(newTitle, newMessage) {
+        const title = newTitle || this.state.alert.title
+        const message = newMessage || this.state.alert.message
+        this.setState({ alert: { title, message, show: true } })
     }
 
     handleCloseModal() {
-        this.setState({ alert: { show: false } });
+        this.setState({ alert: { show: false } })
     }
 
     updateResources() {
@@ -156,7 +152,7 @@ export default class Coordinator extends React.Component {
                 .then(resources => {
                     console.log('[YXCRM] YanuX Coordinator Resources:', resources)
                     this.props.resourcesRetrieved(resources)
-                }).catch(err => console.log(err))
+                }).catch(err => console.log('[YXCRM] Error getting resources:', err))
         }
     }
 
@@ -164,7 +160,7 @@ export default class Coordinator extends React.Component {
         if (this.props.expression !== data.expression ||
             this.props.total !== data.total) {
             console.log(
-                'Props Expression:', this.props.expression,
+                '[YXC] Props Expression:', this.props.expression,
                 'Data Expression:', data.expression,
                 'Props Total:', this.props.total,
                 'Data Total:', data.total
@@ -193,7 +189,7 @@ export default class Coordinator extends React.Component {
                 } else if (componentsRuleEngine && coordinator.instance && coordinator.instance.id) {
                     this._distributeComponents(coordinator.instance.id, activeInstances)
                 }
-            }).catch(err => console.error(err));
+            }).catch(err => console.error('[YXCCRE] Error getting active instances', err));
         }
     }
 
@@ -203,27 +199,36 @@ export default class Coordinator extends React.Component {
         if (coordinator && componentsRuleEngine) {
             componentsRuleEngine.proxemics = coordinator.proxemics.state
             componentsRuleEngine.instances = activeInstances
-            componentsRuleEngine.run(ignoreManual).then(res => {
-                console.log('[YXCCRE] YanuX Coordinator Components Rule Engine')
-                console.log('[YXCCRE] Instance Id', instanceId)
-                console.log('[YXCCRE] Proxemics:', componentsRuleEngine.proxemics)
-                console.log('[YXCCRE] Instances:', componentsRuleEngine.instances)
-                console.log('[YXCCRE] Result:', res)
-                if (coordinator.instance && coordinator.instance.id === instanceId) {
-                    this.props.configureComponents(res.componentsConfig)
-                }
-                return coordinator.setComponentDistribution(res.componentsConfig, res.auto, instanceId)
-            }).then(() => {
-                return coordinator.getActiveInstances()
-            }).then(activeInstances => {
-                this.props.instanceComponentsDistributed(activeInstances)
-            }).catch(err => console.error('[YXCCRE] Error:', err))
+            componentsRuleEngine.run(ignoreManual)
+                .then(res => {
+                    console.log('[YXCCRE] YanuX Coordinator Components Rule Engine')
+                    console.log('[YXCCRE] Instance Id', instanceId)
+                    console.log('[YXCCRE] Proxemics:', componentsRuleEngine.proxemics)
+                    console.log('[YXCCRE] Instances:', componentsRuleEngine.instances)
+                    console.log('[YXCCRE] Result:', res)
+                    if (coordinator.instance && coordinator.instance.id === instanceId) {
+                        this.props.configureComponents(res.componentsConfig)
+                    }
+                    return coordinator.setComponentDistribution(res.componentsConfig, res.auto, instanceId)
+                }).then(() => {
+                    return coordinator.getActiveInstances()
+                }).then(activeInstances => {
+                    this.props.instanceComponentsDistributed(activeInstances)
+                }).catch(err => console.error('[YXCCRE] Error:', err))
         }
+    }
+
+    resourcesSubscriptionHandler(data, eventType) {
+        console.log(
+            '[YXC] Resources Subscriber Handler Data:', data,
+            'Event Type:', eventType
+        )
+        this.updateResources()
     }
 
     resourceSubscriptionHandler(data, eventType) {
         console.log(
-            'Resource Subscriber Handler Data:', data,
+            '[YXC] Resource Subscriber Handler Data:', data,
             'Event Type:', eventType
         )
         this.updateState(data)
@@ -231,7 +236,7 @@ export default class Coordinator extends React.Component {
 
     proxemicsSubscriptionHandler(data, eventType) {
         console.log(
-            'Proxemics Subscriber Handler Data:', data,
+            '[YXC] Proxemics Subscriber Handler Data:', data,
             'Event Type:', eventType
         )
         this.updateComponents()
@@ -239,19 +244,22 @@ export default class Coordinator extends React.Component {
 
     instancesSubscriptionHandler(data, eventType) {
         console.log(
-            'Instances Subscription Handler Data:', data,
+            '[YXC] Instances Subscription Handler Data:', data,
             'Event Type:', eventType
         )
         this.updateComponents(data)
     }
 
     eventsSubcriptionHandler(data, eventType) {
-        console.log('Events Subscription Handler Data:', data, 'Event Type:', eventType)
+        console.log(
+            '[YXC] Events Subscription Handler Data:', data,
+            'Event Type:', eventType
+        )
     }
 
     reconnectSubscriptionHandler(state, proxemics) {
         console.log(
-            'Reconnect Subscription Handler State:', state,
+            '[YXC] Reconnect Subscription Handler State:', state,
             'Proxemics:', proxemics
         )
         this.updateState(state)
@@ -259,6 +267,8 @@ export default class Coordinator extends React.Component {
 
     resourceSelected(e) {
         console.log('[YXRME] Resource Selected:', e.detail)
+        const coordinator = this.props.coordinator
+        coordinator.subscribeResource(this.resourceSubscriptionHandler, e.detail.selectedResourceId)
     }
 
     createResource(e) {
@@ -267,7 +277,10 @@ export default class Coordinator extends React.Component {
         coordinator.createResource(e.detail.resourceName)
             .then(resource => {
                 console.log('[YXRME] Resource Created:', resource)
-            }).catch(err => console.error(err))
+            }).catch(err => {
+                this.handleOpenModal('Error Creating Resource', err.message)
+                console.error('[YXRME] Error Creating Resource:', err)
+            })
     }
 
     shareResource(e) {
@@ -277,7 +290,7 @@ export default class Coordinator extends React.Component {
             .then(resource => {
                 console.log('[YXRME] Resource Shared:', resource)
             }).catch(err => {
-                this.handleOpenModal('Error', err.message)
+                this.handleOpenModal('Error Sharing Resource', err.message)
                 console.error('[YXRME] Error Sharing Resource:', err)
             })
     }
@@ -288,7 +301,10 @@ export default class Coordinator extends React.Component {
         coordinator.deleteResource(e.detail.resourceId)
             .then(resource => {
                 console.log('[YXRME] Resource Deleted:', resource)
-            }).catch(err => console.error(err))
+            }).catch(err => {
+                this.handleOpenModal('Error Deleting Resource', err.message)
+                console.error('[YXRME] Error Deleting Resource:', err)
+            })
     }
 
     updatedComponentsDistribution(e) {
@@ -296,14 +312,12 @@ export default class Coordinator extends React.Component {
         console.log('[YXCDE] Updated Components Distribution:', e.detail)
         const componentsDistribution = e && e.detail && e.detail.componentsDistribution ? e.detail.componentsDistribution : null
         if (coordinator && componentsDistribution) {
-            Promise.all(
-                Object
-                    .keys(componentsDistribution)
-                    .map(instanceId => coordinator.setComponentDistribution(
-                        componentsDistribution[instanceId].components,
-                        componentsDistribution[instanceId].auto,
-                        instanceId
-                    ))
+            Promise.all(Object.keys(componentsDistribution)
+                .map(instanceId => coordinator.setComponentDistribution(
+                    componentsDistribution[instanceId].components,
+                    componentsDistribution[instanceId].auto,
+                    instanceId
+                ))
             ).then(results => {
                 console.log('[YXCDE] Updated Instances Based on the New Components Distribution:', results)
             }).catch(e => {
@@ -317,13 +331,7 @@ export default class Coordinator extends React.Component {
         const coordinator = this.props.coordinator
         coordinator.getActiveInstances().then(activeInstances => {
             this._distributeComponents(e.detail.instanceId, activeInstances, true)
-        }).catch(err => console.error(err));
+        }).catch(err => console.error('[YXCDE] Error while getting active instances:', err));
         console.log('[YXCDE] Reset Auto Components Distribution:', e.detail)
     }
-
 }
-
-
-
-
-

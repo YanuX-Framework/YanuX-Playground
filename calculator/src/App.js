@@ -70,7 +70,7 @@ const mapDispatchToProps = dispatch => {
       dispatch(instanceComponentsDistributed(config))
     },
     setValues: (expression, total) => {
-      dispatch(setValues(expression, total))
+      dispatch(setValues(expression || '', total || 0))
     },
     calculate: buttonKey => {
       dispatch(calculate(buttonKey))

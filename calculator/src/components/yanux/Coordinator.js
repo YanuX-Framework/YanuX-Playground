@@ -165,7 +165,7 @@ export default class Coordinator extends React.Component {
                 'Props Total:', this.props.total,
                 'Data Total:', data.total
             )
-            this.props.setValues(data.expression || '', data.total || 0)
+            this.props.setValues(data.expression, data.total)
         }
     }
 
@@ -268,7 +268,15 @@ export default class Coordinator extends React.Component {
     resourceSelected(e) {
         console.log('[YXRME] Resource Selected:', e.detail)
         const coordinator = this.props.coordinator
-        coordinator.subscribeResource(this.resourceSubscriptionHandler, e.detail.selectedResourceId)
+        const resourceId = e.detail.selectedResourceId;
+        coordinator.getResourceData(resourceId).then(data => {
+            console.log('[YXRME] Resource Id', resourceId, 'Data:', data)
+            this.props.setValues(data.expression, data.total)
+            coordinator.subscribeResource(this.resourceSubscriptionHandler, resourceId)
+        }).catch(err => {
+            this.handleOpenModal('Error Selecting Resource', err.message)
+            console.error('[YXRME] Error Selecting Resource:', err)
+        })
     }
 
     createResource(e) {

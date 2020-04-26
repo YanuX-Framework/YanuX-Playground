@@ -19,7 +19,13 @@ export default store => next => action => {
         };
         const subscribedResourceId = state.yanuxCoordinator.coordinator.subscribedResourceId;
         console.log('[YXCM] Resource Data:', resourceData, 'Subscribed Resource Id:', subscribedResourceId);
-        state.yanuxCoordinator.coordinator.setResourceData(resourceData, subscribedResourceId)
+        state.yanuxCoordinator.coordinator
+            .setResourceData(resourceData, subscribedResourceId)
+            .then(savedData => {
+                console.log('[YXCM] Saved Resource Data:', savedData)
+            }).catch(e => {
+                console.error('[YXCM] Error Saving Resource Data:', e)
+            })
     }
     return result
 }

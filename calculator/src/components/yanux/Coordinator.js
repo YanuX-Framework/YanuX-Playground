@@ -23,6 +23,7 @@ export default class Coordinator extends React.Component {
         this.createResource = this.createResource.bind(this)
         this.shareResource = this.shareResource.bind(this)
         this.deleteResource = this.deleteResource.bind(this)
+        this.unshareResource = this.unshareResource.bind(this)
 
         this.componentsDistributionRef = React.createRef()
         this.updatedComponentsDistribution = this.updatedComponentsDistribution.bind(this)
@@ -69,6 +70,10 @@ export default class Coordinator extends React.Component {
             this.resourceManagementRef.current.addEventListener(
                 'delete-resource',
                 this.deleteResource
+            )
+            this.resourceManagementRef.current.addEventListener(
+                'unshare-resource',
+                this.unshareResource
             )
         }
 
@@ -152,7 +157,7 @@ export default class Coordinator extends React.Component {
                 .then(resources => {
                     console.log('[YXCRM] YanuX Coordinator Resources:', resources)
                     this.props.resourcesRetrieved(resources)
-                }).catch(err => console.log('[YXCRM] Error getting resources:', err))
+                }).catch(err => console.error('[YXCRM] Error getting resources:', err))
         }
     }
 
@@ -315,6 +320,18 @@ export default class Coordinator extends React.Component {
             })
     }
 
+    unshareResource(e) {
+        console.log('[YXRME] Unshare Resource:', e.detail)
+        const coordinator = this.props.coordinator
+        coordinator.unshareResource(e.detail.resourceId, e.detail.userEmail)
+            .then(resource => {
+                console.log('[YXRME] Resource Unshared:', resource)
+            }).catch(err => {
+                this.handleOpenModal('Error Unsharing Resource', err.message)
+                console.error('[YXRME] Error Unsharing Resource:', err)
+            })
+    }
+
     updatedComponentsDistribution(e) {
         const coordinator = this.props.coordinator
         console.log('[YXCDE] Updated Components Distribution:', e.detail)
@@ -329,7 +346,7 @@ export default class Coordinator extends React.Component {
             ).then(results => {
                 console.log('[YXCDE] Updated Instances Based on the New Components Distribution:', results)
             }).catch(e => {
-                console.log('[YXCDE] Something went wrong while updating Instances based on the new Components Distribution:', e)
+                console.error('[YXCDE] Something went wrong while updating Instances based on the new Components Distribution:', e)
             })
         }
 
@@ -340,6 +357,6 @@ export default class Coordinator extends React.Component {
         coordinator.getActiveInstances().then(activeInstances => {
             this._distributeComponents(e.detail.instanceId, activeInstances, true)
         }).catch(err => console.error('[YXCDE] Error while getting active instances:', err));
-        console.log('[YXCDE] Reset Auto Components Distribution:', e.detail)
+        console.error('[YXCDE] Reset Auto Components Distribution:', e.detail)
     }
 }

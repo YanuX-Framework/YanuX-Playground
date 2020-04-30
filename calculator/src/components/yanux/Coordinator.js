@@ -11,8 +11,9 @@ export default class Coordinator extends React.Component {
         this.handleOpenModal = this.handleOpenModal.bind(this)
         this.handleCloseModal = this.handleCloseModal.bind(this)
 
-        this.resourcesSubscriptionHandler = this.resourcesSubscriptionHandler.bind(this)
         this.resourceSubscriptionHandler = this.resourceSubscriptionHandler.bind(this)
+        this.resourcesSubscriptionHandler = this.resourcesSubscriptionHandler.bind(this)
+        this.resourceSubscriptionsSubscriptionHandler = this.resourceSubscriptionsSubscriptionHandler.bind(this)
         this.proxemicsSubscriptionHandler = this.proxemicsSubscriptionHandler.bind(this)
         this.instancesSubscriptionHandler = this.instancesSubscriptionHandler.bind(this)
         this.eventsSubcriptionHandler = this.eventsSubcriptionHandler.bind(this)
@@ -46,8 +47,9 @@ export default class Coordinator extends React.Component {
                 console.error('[YXC] Error Connecting to YanuX Broker', err)
                 this.props.logout()
             })
-            coordinator.subscribeResources(this.resourcesSubscriptionHandler)
             coordinator.subscribeResource(this.resourceSubscriptionHandler)
+            coordinator.subscribeResources(this.resourcesSubscriptionHandler)
+            coordinator.subscribeResourceSubscriptions(this.resourceSubscriptionsSubscriptionHandler)
             coordinator.subscribeProxemics(this.proxemicsSubscriptionHandler)
             coordinator.subscribeInstances(this.instancesSubscriptionHandler)
             coordinator.subscribeEvents(this.eventsSubcriptionHandler)
@@ -192,13 +194,13 @@ export default class Coordinator extends React.Component {
                     }
                     this.props.instanceComponentsDistributed(activeInstances)
                 } else if (componentsRuleEngine && coordinator.instance && coordinator.instance.id) {
-                    this._distributeComponents(coordinator.instance.id, activeInstances)
+                    this.distributeComponents(coordinator.instance.id, activeInstances)
                 }
             }).catch(err => console.error('[YXCCRE] Error getting active instances', err));
         }
     }
 
-    _distributeComponents(instanceId, activeInstances, ignoreManual = false) {
+    distributeComponents(instanceId, activeInstances, ignoreManual = false) {
         const coordinator = this.props.coordinator
         const componentsRuleEngine = this.props.componentsRuleEngine
         if (coordinator && componentsRuleEngine) {
@@ -223,6 +225,27 @@ export default class Coordinator extends React.Component {
         }
     }
 
+    selectResource(resourceId) {
+        const coordinator = this.props.coordinator
+        coordinator.getResourceData(resourceId).then(data => {
+            console.log('[YXC] Resource Id', resourceId, 'Data:', data)
+            this.props.setValues(data.expression, data.total)
+            coordinator.subscribeResource(this.resourceSubscriptionHandler, resourceId)
+        }).catch(err => {
+            this.handleOpenModal('Error Selecting Resource', err.message)
+            console.error('[YXC] Error Selecting Resource:', err)
+        })
+    }
+
+
+    resourceSubscriptionHandler(data, eventType) {
+        console.log(
+            '[YXC] Resource Subscriber Handler Data:', data,
+            'Event Type:', eventType
+        )
+        this.updateState(data)
+    }
+
     resourcesSubscriptionHandler(data, eventType) {
         console.log(
             '[YXC] Resources Subscriber Handler Data:', data,
@@ -231,12 +254,14 @@ export default class Coordinator extends React.Component {
         this.updateResources()
     }
 
-    resourceSubscriptionHandler(data, eventType) {
+    resourceSubscriptionsSubscriptionHandler(data, eventType) {
         console.log(
-            '[YXC] Resource Subscriber Handler Data:', data,
+            '[YXC] Resources Subscriber Handler Data:', data,
             'Event Type:', eventType
         )
-        this.updateState(data)
+        if (eventType !== 'removed') {
+            this.selectResource(data.resource)
+        }
     }
 
     proxemicsSubscriptionHandler(data, eventType) {
@@ -272,16 +297,7 @@ export default class Coordinator extends React.Component {
 
     resourceSelected(e) {
         console.log('[YXRME] Resource Selected:', e.detail)
-        const coordinator = this.props.coordinator
-        const resourceId = e.detail.selectedResourceId;
-        coordinator.getResourceData(resourceId).then(data => {
-            console.log('[YXRME] Resource Id', resourceId, 'Data:', data)
-            this.props.setValues(data.expression, data.total)
-            coordinator.subscribeResource(this.resourceSubscriptionHandler, resourceId)
-        }).catch(err => {
-            this.handleOpenModal('Error Selecting Resource', err.message)
-            console.error('[YXRME] Error Selecting Resource:', err)
-        })
+        this.selectResource(e.detail.selectedResourceId)
     }
 
     createResource(e) {
@@ -355,7 +371,7 @@ export default class Coordinator extends React.Component {
     resetAutoComponentsDistribution(e) {
         const coordinator = this.props.coordinator
         coordinator.getActiveInstances().then(activeInstances => {
-            this._distributeComponents(e.detail.instanceId, activeInstances, true)
+            this.distributeComponents(e.detail.instanceId, activeInstances, true)
         }).catch(err => console.error('[YXCDE] Error while getting active instances:', err));
         console.error('[YXCDE] Reset Auto Components Distribution:', e.detail)
     }

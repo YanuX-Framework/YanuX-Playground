@@ -40,6 +40,7 @@ const mapStateToProps = state => {
     authenticationError: store.getAuthenticationError(state),
     isCoordinatorReady: store.isCoordinatorReady(state),
     coordinator: store.getCoordinator(state),
+    subscribedResourceId: store.getSubscribedResourceId(state),
     resources: store.getResources(state),
     componentsRuleEngine: store.getComponentsRuleEngine(state),
     componentsConfig: store.getComponentsConfig(state),

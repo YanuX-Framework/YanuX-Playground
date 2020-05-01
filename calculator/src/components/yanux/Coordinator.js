@@ -13,7 +13,7 @@ export default class Coordinator extends React.Component {
 
         this.resourceSubscriptionHandler = this.resourceSubscriptionHandler.bind(this)
         this.resourcesSubscriptionHandler = this.resourcesSubscriptionHandler.bind(this)
-        this.resourceSubscriptionsSubscriptionHandler = this.resourceSubscriptionsSubscriptionHandler.bind(this)
+        this.resourceSubscriptionSubscriptionHandler = this.resourceSubscriptionSubscriptionHandler.bind(this)
         this.proxemicsSubscriptionHandler = this.proxemicsSubscriptionHandler.bind(this)
         this.instancesSubscriptionHandler = this.instancesSubscriptionHandler.bind(this)
         this.eventsSubcriptionHandler = this.eventsSubcriptionHandler.bind(this)
@@ -35,10 +35,12 @@ export default class Coordinator extends React.Component {
         const coordinator = this.props.coordinator
         if (coordinator && !prevProps.coordinator) {
             coordinator.init().then(results => {
-                const [initialState, initialProxemics] = results
+                const [initialState, initialProxemics, initialResourceId] = results
                 console.log('[YXC] Connected to YanuX Broker')
                 console.log('[YXC] Initial State', initialState)
                 console.log('[YXC] Initial Proxemics', initialProxemics)
+                console.log('[YXC] Initial Resource Id', initialResourceId)
+                coordinator.subscribeResource(this.resourceSubscriptionHandler, initialResourceId);
                 this.resourceSubscriptionHandler(initialState)
                 this.props.connected(initialState, initialProxemics)
                 this.updateResources()
@@ -47,9 +49,8 @@ export default class Coordinator extends React.Component {
                 console.error('[YXC] Error Connecting to YanuX Broker', err)
                 this.props.logout()
             })
-            coordinator.subscribeResource(this.resourceSubscriptionHandler)
             coordinator.subscribeResources(this.resourcesSubscriptionHandler)
-            coordinator.subscribeResourceSubscriptions(this.resourceSubscriptionsSubscriptionHandler)
+            coordinator.subscribeResourceSubscription(this.resourceSubscriptionSubscriptionHandler)
             coordinator.subscribeProxemics(this.proxemicsSubscriptionHandler)
             coordinator.subscribeInstances(this.instancesSubscriptionHandler)
             coordinator.subscribeEvents(this.eventsSubcriptionHandler)
@@ -117,7 +118,7 @@ export default class Coordinator extends React.Component {
                     <div className="resource-management">
                         <yanux-resource-management
                             ref={this.resourceManagementRef}
-                            resourceId={this.props.resourceId || this.props.coordinator.resource.id}
+                            selectedResourceId={this.props.subscribedResourceId || this.props.coordinator.resource.id}
                             resources={JSON.stringify(this.props.resources)} />
                     </div>
                     <div className="components-distribution">
@@ -158,6 +159,9 @@ export default class Coordinator extends React.Component {
             coordinator.getResources()
                 .then(resources => {
                     console.log('[YXCRM] YanuX Coordinator Resources:', resources)
+                    if (resources.length > 0 && !resources.find(r => r.id === this.subscribedResourceId)) {
+                        this.selectResource(resources[0].id)
+                    }
                     this.props.resourcesRetrieved(resources)
                 }).catch(err => console.error('[YXCRM] Error getting resources:', err))
         }
@@ -254,7 +258,7 @@ export default class Coordinator extends React.Component {
         this.updateResources()
     }
 
-    resourceSubscriptionsSubscriptionHandler(data, eventType) {
+    resourceSubscriptionSubscriptionHandler(data, eventType) {
         console.log(
             '[YXC] Resources Subscriber Handler Data:', data,
             'Event Type:', eventType
@@ -318,6 +322,7 @@ export default class Coordinator extends React.Component {
         coordinator.shareResource(e.detail.resourceId, e.detail.userEmail)
             .then(resource => {
                 console.log('[YXRME] Resource Shared:', resource)
+                this.updateResources()
             }).catch(err => {
                 this.handleOpenModal('Error Sharing Resource', err.message)
                 console.error('[YXRME] Error Sharing Resource:', err)
@@ -330,6 +335,7 @@ export default class Coordinator extends React.Component {
         coordinator.deleteResource(e.detail.resourceId)
             .then(resource => {
                 console.log('[YXRME] Resource Deleted:', resource)
+                this.updateResources()
             }).catch(err => {
                 this.handleOpenModal('Error Deleting Resource', err.message)
                 console.error('[YXRME] Error Deleting Resource:', err)
@@ -342,6 +348,7 @@ export default class Coordinator extends React.Component {
         coordinator.unshareResource(e.detail.resourceId, e.detail.userEmail)
             .then(resource => {
                 console.log('[YXRME] Resource Unshared:', resource)
+                this.updateResources()
             }).catch(err => {
                 this.handleOpenModal('Error Unsharing Resource', err.message)
                 console.error('[YXRME] Error Unsharing Resource:', err)

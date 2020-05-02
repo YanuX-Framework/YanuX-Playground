@@ -159,9 +159,6 @@ export default class Coordinator extends React.Component {
             coordinator.getResources()
                 .then(resources => {
                     console.log('[YXCRM] YanuX Coordinator Resources:', resources)
-                    if (resources.length > 0 && !resources.find(r => r.id === this.subscribedResourceId)) {
-                        this.selectResource(resources[0].id)
-                    }
                     this.props.resourcesRetrieved(resources)
                 }).catch(err => console.error('[YXCRM] Error getting resources:', err))
         }

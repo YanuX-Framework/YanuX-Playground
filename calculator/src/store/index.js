@@ -47,7 +47,7 @@ export const getCoordinator = state => {
 }
 
 export const getSubscribedResourceId = state => {
-  return state.yanuxCoordinator.subscribedResourceId
+  return getCoordinator(state) ? getCoordinator(state).subscribedResourceId : null;
 }
 
 export const getResources = state => {

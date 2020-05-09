@@ -22,6 +22,7 @@ export default class Coordinator extends React.Component {
         this.resourceManagementRef = React.createRef();
         this.resourceSelected = this.resourceSelected.bind(this)
         this.createResource = this.createResource.bind(this)
+        this.renameResource = this.renameResource.bind(this)
         this.shareResource = this.shareResource.bind(this)
         this.deleteResource = this.deleteResource.bind(this)
         this.unshareResource = this.unshareResource.bind(this)
@@ -67,12 +68,16 @@ export default class Coordinator extends React.Component {
                 this.createResource
             )
             this.resourceManagementRef.current.addEventListener(
-                'share-resource',
-                this.shareResource
+                'rename-resource',
+                this.renameResource
             )
             this.resourceManagementRef.current.addEventListener(
                 'delete-resource',
                 this.deleteResource
+            )
+            this.resourceManagementRef.current.addEventListener(
+                'share-resource',
+                this.shareResource
             )
             this.resourceManagementRef.current.addEventListener(
                 'unshare-resource',
@@ -230,8 +235,11 @@ export default class Coordinator extends React.Component {
         const coordinator = this.props.coordinator
         coordinator.getResourceData(resourceId).then(data => {
             console.log('[YXC] Resource Id', resourceId, 'Data:', data)
+            return Promise.all([Promise.resolve(data), coordinator.subscribeResource(this.resourceSubscriptionHandler, resourceId)]);
+        }).then(results => {
+            const [data, resourceSubscription] = results;
             this.props.setValues(data.expression, data.total)
-            coordinator.subscribeResource(this.resourceSubscriptionHandler, resourceId)
+            console.log('[YXC] Resource Subscription', resourceSubscription)
         }).catch(err => {
             this.handleOpenModal('Error Selecting Resource', err.message)
             console.error('[YXC] Error Selecting Resource:', err)
@@ -313,16 +321,15 @@ export default class Coordinator extends React.Component {
             })
     }
 
-    shareResource(e) {
-        console.log('[YXRME] Share Resource:', e.detail)
+    renameResource(e) {
+        console.log('[YXRME] Rename Resource:', e.detail)
         const coordinator = this.props.coordinator
-        coordinator.shareResource(e.detail.resourceId, e.detail.userEmail)
+        coordinator.renameResource(e.detail.resourceName, e.detail.resourceId)
             .then(resource => {
-                console.log('[YXRME] Resource Shared:', resource)
-                this.updateResources()
+                console.log('[YXRME] Resource Renamed:', resource)
             }).catch(err => {
-                this.handleOpenModal('Error Sharing Resource', err.message)
-                console.error('[YXRME] Error Sharing Resource:', err)
+                this.handleOpenModal('Error Renaming Resource', err.message)
+                console.error('[YXRME] Error Renameing Resource:', err)
             })
     }
 
@@ -339,10 +346,23 @@ export default class Coordinator extends React.Component {
             })
     }
 
+    shareResource(e) {
+        console.log('[YXRME] Share Resource:', e.detail)
+        const coordinator = this.props.coordinator
+        coordinator.shareResource(e.detail.userEmail, e.detail.resourceId)
+            .then(resource => {
+                console.log('[YXRME] Resource Shared:', resource)
+                this.updateResources()
+            }).catch(err => {
+                this.handleOpenModal('Error Sharing Resource', err.message)
+                console.error('[YXRME] Error Sharing Resource:', err)
+            })
+    }
+
     unshareResource(e) {
         console.log('[YXRME] Unshare Resource:', e.detail)
         const coordinator = this.props.coordinator
-        coordinator.unshareResource(e.detail.resourceId, e.detail.userEmail)
+        coordinator.unshareResource(e.detail.userEmail, e.detail.resourceId)
             .then(resource => {
                 console.log('[YXRME] Resource Unshared:', resource)
                 this.updateResources()

@@ -202,7 +202,7 @@ export default class Coordinator extends React.Component {
                 } else if (componentsRuleEngine && coordinator.instance && coordinator.instance.id) {
                     this.distributeComponents(coordinator.instance.id, activeInstances)
                 }
-            }).catch(err => console.error('[YXCCRE] Error getting active instances', err));
+            }).catch(err => console.error('[YXCCRE] Error getting active instances:', err));
         }
     }
 

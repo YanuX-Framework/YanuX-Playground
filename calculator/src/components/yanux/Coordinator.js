@@ -210,24 +210,28 @@ export default class Coordinator extends React.Component {
         const coordinator = this.props.coordinator
         const componentsRuleEngine = this.props.componentsRuleEngine
         if (coordinator && componentsRuleEngine) {
-            componentsRuleEngine.proxemics = coordinator.proxemics.state
-            componentsRuleEngine.instances = activeInstances
-            componentsRuleEngine.run(ignoreManual)
-                .then(res => {
-                    console.log('[YXCCRE] YanuX Coordinator Components Rule Engine')
-                    console.log('[YXCCRE] Instance Id', instanceId)
-                    console.log('[YXCCRE] Proxemics:', componentsRuleEngine.proxemics)
-                    console.log('[YXCCRE] Instances:', componentsRuleEngine.instances)
-                    console.log('[YXCCRE] Result:', res)
-                    if (coordinator.instance && coordinator.instance.id === instanceId) {
-                        this.props.configureComponents(res.componentsConfig)
-                    }
-                    return coordinator.setComponentDistribution(res.componentsConfig, res.auto, instanceId)
-                }).then(() => {
-                    return coordinator.getActiveInstances()
-                }).then(activeInstances => {
-                    this.props.instanceComponentsDistributed(activeInstances)
-                }).catch(err => console.error('[YXCCRE] Error:', err))
+            coordinator.getProxemicsState().then(proxemics => {
+                console.log('Merged Proxemics:', proxemics)
+                componentsRuleEngine.proxemics = proxemics
+            }).then(() => {
+                componentsRuleEngine.instances = activeInstances
+                return componentsRuleEngine.run(ignoreManual)
+            }).then(res => {
+                console.log(
+                    '[YXCCRE] - YanuX Coordinator Components Rule Engine -',
+                    'Instance Id:', instanceId,
+                    'Proxemics:', componentsRuleEngine.proxemics,
+                    'Instances:', componentsRuleEngine.instances,
+                    'Result', res)
+                if (coordinator.instance && coordinator.instance.id === instanceId) {
+                    this.props.configureComponents(res.componentsConfig)
+                }
+                return coordinator.setComponentDistribution(res.componentsConfig, res.auto, instanceId)
+            }).then(() => {
+                return coordinator.getActiveInstances()
+            }).then(activeInstances => {
+                this.props.instanceComponentsDistributed(activeInstances)
+            }).catch(err => console.error('[YXCCRE] Error:', err))
         }
     }
 
@@ -296,10 +300,11 @@ export default class Coordinator extends React.Component {
         )
     }
 
-    reconnectSubscriptionHandler(state, proxemics) {
+    reconnectSubscriptionHandler(state, proxemics, resourceId) {
         console.log(
             '[YXC] Reconnect Subscription Handler State:', state,
-            'Proxemics:', proxemics
+            'Proxemics:', proxemics,
+            'Resource Id:', resourceId
         )
         this.updateState(state)
     }

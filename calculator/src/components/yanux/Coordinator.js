@@ -120,17 +120,21 @@ export default class Coordinator extends React.Component {
         } else {
             return (
                 <React.Fragment>
-                    <div className="resource-management">
-                        <yanux-resource-management
-                            ref={this.resourceManagementRef}
-                            selectedResourceId={this.props.subscribedResourceId || this.props.coordinator.resource.id}
-                            resources={JSON.stringify(this.props.resources)} />
-                    </div>
-                    <div className="components-distribution">
-                        <yanux-components-distribution
-                            ref={this.componentsDistributionRef}
-                            instanceId={this.props.coordinator.instance.id}
-                            componentsDistribution={JSON.stringify(this.props.instancesComponentsDistribution)} />
+                    <div className="yanux-elements">
+                        <div className="yanux-element resource-management">
+                            <span className="info">Resources</span>
+                            <yanux-resource-management
+                                ref={this.resourceManagementRef}
+                                selectedResourceId={this.props.subscribedResourceId || this.props.coordinator.resource.id}
+                                resources={JSON.stringify(this.props.resources)} />
+                        </div>
+                        <div className="yanux-element components-distribution">
+                            <span className="info">Devices</span>
+                            <yanux-components-distribution
+                                ref={this.componentsDistributionRef}
+                                instanceId={this.props.coordinator.instance.id}
+                                componentsDistribution={JSON.stringify(this.props.instancesComponentsDistribution)} />
+                        </div>
                     </div>
                     <div className="alert">
                         <ReactModal

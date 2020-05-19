@@ -18,16 +18,19 @@ export class App extends Component {
   render() {
     return (
       <React.Fragment>
-        <div className="header">
-          <Authentication.Login {...this.props} />
+        <div className="fillscreen">
+          <div className="header">
+            <Authentication.Login {...this.props} />
+          </div>
+          <div className="calculator">
+            <Calculator.Screen {...this.props} />
+            <Calculator.Keypad {...this.props} />
+          </div>
+          <div className="info">
+            &#x2193; Scroll down to manage resources and devices &#x2193;
+          </div>
         </div>
-        <div className="calculator">
-          <Calculator.Screen {...this.props} />
-          <Calculator.Keypad {...this.props} />
-        </div>
-        <div className="footer">
-          <Yanux.Coordinator {...this.props} />
-        </div>
+        <Yanux.Coordinator {...this.props} />
       </React.Fragment>
     );
   }

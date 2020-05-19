@@ -34,3 +34,20 @@
 .alert-button {
   padding: 8px 16px;
 }
+
+.yanux-elements {
+  width: max-content;
+  margin: auto;
+  background-color: #ddd;
+  border: 1px solid black;
+  border-radius: 8px;
+}
+
+.yanux-element {
+  width: max-content;
+  margin: 4px auto;
+  background-color: white;
+  padding: 4px;
+  border: 1px solid black;
+  border-radius: 8px;
+}

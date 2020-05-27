@@ -33,7 +33,7 @@
     "base64url": "^3.0.1",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.2",
-    "enzyme-to-json": "^3.4.4",
+    "enzyme-to-json": "^3.5.0",
     "jsrsasign": "^8.0.15",
     "query-string": "^6.12.1",
     "randombytes": "^2.1.0",
@@ -48,6 +48,7 @@
     "redux-thunk": "^2.3.0",
     "sha.js": "^2.4.11",
     "sinon": "^9.0.2",
-    "source-map-loader": "^0.2.4"
+    "source-map-loader": "^1.0.0",
+    "webpack-filter-warnings-plugin": "^1.2.1"
   }
 }

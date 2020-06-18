@@ -186,15 +186,14 @@ export default class Coordinator extends React.Component {
         }
     }
 
+    //TODO: I should probably find a way to make this updateComponents pattern something that is "promoted" by the library/framework itself. 
     updateComponents(instance = null) {
         const coordinator = this.props.coordinator
         const componentsRuleEngine = this.props.componentsRuleEngine
         if (coordinator) {
             coordinator.getActiveInstances().then(activeInstances => {
                 if (instance && instance.componentsDistribution && instance.componentsDistribution.auto === false) {
-                    //TODO:
-                    //I should probably find a way to make this pattern something that is "promoted" by the library/framework itself. 
-                    //At the very least I should "virtually" rename "_id" to "id".
+                    //Also, at the very least I should "virtually" rename "_id" to "id".
                     //I will probably just make a "blind" copy of "_id" into "id" so that it is backwards compatible.
                     const localInstance = activeInstances.find(i => i._id === coordinator.instance.id)
                     console.log('[YXCCRE] YanuX Coordinator Manual Component Distribution:', activeInstances)
@@ -210,6 +209,7 @@ export default class Coordinator extends React.Component {
         }
     }
 
+    //TODO: This is also a good candidate to be included into the framework.
     distributeComponents(instanceId, activeInstances, ignoreManual = false) {
         const coordinator = this.props.coordinator
         const componentsRuleEngine = this.props.componentsRuleEngine
@@ -381,6 +381,7 @@ export default class Coordinator extends React.Component {
             })
     }
 
+    //TODO: This is also a good candidate to be included into the framework.
     updatedComponentsDistribution(e) {
         const coordinator = this.props.coordinator
         console.log('[YXCDE] Updated Components Distribution:', e.detail)
@@ -401,6 +402,7 @@ export default class Coordinator extends React.Component {
 
     }
 
+    //TODO: This is also a good candidate to be included into the framework.
     resetAutoComponentsDistribution(e) {
         const coordinator = this.props.coordinator
         coordinator.getActiveInstances().then(activeInstances => {

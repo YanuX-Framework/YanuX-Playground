@@ -14,7 +14,7 @@ export default async (nonce) => {
                 const json = await (await fetch(header.jku)).json()
                 const key = (json.keys || []).find(k => header.kid === k.kid)
                 if (key && payload.nonce && nonce === payload.nonce &&
-                    KJUR.jws.JWS.verifyJWT(idToken, KEYUTIL.getKey(key), { alg: [header.alg] })) {
+                    KJUR.jws.JWS.verifyJWT(idToken, KEYUTIL.getKey(key), { alg: [header.alg], gracePeriod: 1 * 60 * 60 })) {
                     localStorage.setItem('id_token', idToken)
                     console.log('Payload:', payload);
                     return payload

@@ -3,7 +3,6 @@ import React from 'react'
 import ReactModal from 'react-modal'
 
 export default class Coordinator extends React.Component {
-
     constructor(props) {
         super(props)
         this.state = { alert: { title: 'Alert', message: 'Message', show: false } }
@@ -165,11 +164,10 @@ export default class Coordinator extends React.Component {
     updateResources() {
         const coordinator = this.props.coordinator
         if (coordinator) {
-            coordinator.getResources()
-                .then(resources => {
-                    console.log('[YXCRM] YanuX Coordinator Resources:', resources)
-                    this.props.resourcesRetrieved(resources)
-                }).catch(err => console.error('[YXCRM] Error getting resources:', err))
+            coordinator.getResources().then(resources => {
+                console.log('[YXCRM] YanuX Coordinator Resources:', resources)
+                this.props.resourcesRetrieved(resources)
+            }).catch(err => console.error('[YXCRM] Error getting resources:', err))
         }
     }
 

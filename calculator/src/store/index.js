@@ -8,8 +8,13 @@ import yanuxCoordinatorReducer from './reducers/yanuxCoordinatorReducer'
 
 import yanuxCoordinatorMiddleware from './middleware/yanuxCoordinatorMiddleware'
 
-
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
+//TODO: WARNING: Temporarily disabling console logging for better performance.
+//console.log = function(){}
+//console.debug = function(){}
+//console.warn = function(){}
+//console.error = function(){}
 
 const loggerMiddleware = createLogger()
 

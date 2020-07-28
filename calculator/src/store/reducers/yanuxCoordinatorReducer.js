@@ -51,13 +51,9 @@ export default (state = initialState, action) => {
                 )
             })
         case types.RESOURCES_RETRIEVED:
-            return Object.assign({}, state, {
-                resources: action.resources
-            })
+            return Object.assign({}, state, { resources: action.resources })
         case types.CONFIGURE_COMPONENTS:
-            return Object.assign({}, state, {
-                componentsConfig: action.componentsConfig
-            })
+            return Object.assign({}, state, { componentsConfig: action.componentsConfig })
         case types.INSTANCES_COMPONENTS_DISTRIBUTED:
             //TODO: Perhaps this conversion from plain instances to InstancesComponentsDistribution could be done internally by the (Feathers)Coordinator.
             return Object.assign({}, state, {

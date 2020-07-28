@@ -172,8 +172,7 @@ export default class Coordinator extends React.Component {
     }
 
     updateState(data) {
-        if (this.props.expression !== data.expression ||
-            this.props.total !== data.total) {
+        if (data && (this.props.expression !== data.expression || this.props.total !== data.total)) {
             console.log(
                 '[YXC] Props Expression:', this.props.expression,
                 'Data Expression:', data.expression,
@@ -239,8 +238,8 @@ export default class Coordinator extends React.Component {
 
     selectResource(resourceId) {
         const coordinator = this.props.coordinator
-        coordinator.getResourceData(resourceId).then(data => {
-            console.log('[YXC] Resource Id', resourceId, 'Data:', data)
+        return coordinator.getResourceData(resourceId).then(data => {
+            console.log('[YXC] Resource Id', data.id, 'Data:', data)
             return Promise.all([Promise.resolve(data), coordinator.subscribeResource(this.resourceSubscriptionHandler, resourceId)]);
         }).then(results => {
             const [data, resourceSubscription] = results;
@@ -266,6 +265,10 @@ export default class Coordinator extends React.Component {
             '[YXC] Resources Subscriber Handler Data:', data,
             'Event Type:', eventType
         )
+        const coordinator = this.props.coordinator;
+        if (eventType === 'removed' && data.id === coordinator.subscribedResourceId) {
+            this.selectResource(null)
+        }
         this.updateResources()
     }
 
@@ -274,9 +277,7 @@ export default class Coordinator extends React.Component {
             '[YXC] Resources Subscriber Handler Data:', data,
             'Event Type:', eventType
         )
-        if (eventType !== 'removed') {
-            this.selectResource(data.resource)
-        }
+        if (eventType !== 'removed') { this.selectResource(data.resource) }
     }
 
     proxemicsSubscriptionHandler(data, eventType) {
@@ -334,6 +335,7 @@ export default class Coordinator extends React.Component {
         coordinator.renameResource(e.detail.resourceName, e.detail.resourceId)
             .then(resource => {
                 console.log('[YXRME] Resource Renamed:', resource)
+                this.updateResources()
             }).catch(err => {
                 this.handleOpenModal('Error Renaming Resource', err.message)
                 console.error('[YXRME] Error Renameing Resource:', err)
@@ -341,8 +343,8 @@ export default class Coordinator extends React.Component {
     }
 
     deleteResource(e) {
-        console.log('[YXRME] Delete Resource:', e.detail)
         const coordinator = this.props.coordinator
+        console.log('[YXRME] Delete Resource:', e.detail)
         coordinator.deleteResource(e.detail.resourceId)
             .then(resource => {
                 console.log('[YXRME] Resource Deleted:', resource)

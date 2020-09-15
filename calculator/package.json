@@ -36,7 +36,7 @@
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.4",
     "enzyme-to-json": "^3.5.0",
-    "jsrsasign": "^8.0.24",
+    "jsrsasign": "^9.1.9",
     "query-string": "^6.13.2",
     "randombytes": "^2.1.0",
     "react": "^16.13.1",

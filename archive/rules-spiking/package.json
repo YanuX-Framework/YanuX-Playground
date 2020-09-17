@@ -9,9 +9,9 @@
   "license": "MIT",
   "description": "",
   "dependencies": {
-    "json-rules-engine": "^3.0.2",
+    "json-rules-engine": "^5.0.3",
     "lodash": "^4.17.11",
-    "node-rules": "^4.0.2",
+    "node-rules": "^5.0.0",
     "nools": "^0.4.4",
     "rools": "^2.2.4",
     "tau-prolog": "^0.2.65"

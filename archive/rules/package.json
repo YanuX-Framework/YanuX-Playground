@@ -10,6 +10,6 @@
   "description": "",
   "dependencies": {
     "lodash": "^4.17.15",
-    "node-rules": "^4.0.2"
+    "node-rules": "^5.0.0"
   }
 }

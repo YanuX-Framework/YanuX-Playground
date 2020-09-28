@@ -2,6 +2,7 @@
   "name": "yanux-playground-capabilities",
   "version": "1.0.0",
   "description": "",
+  "private": true,
   "main": "app.js",
   "scripts": {
     "start": "npx electron ./main/main.js",

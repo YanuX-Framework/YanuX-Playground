@@ -1,0 +1,16 @@
+{
+  "name": "facingobjects",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "combinations": "^1.0.0",
+    "mathjs": "^7.5.1",
+    "ml-distance-euclidean": "^2.0.0"
+  }
+}

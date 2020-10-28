@@ -55,11 +55,12 @@ const angleBetweenVectors = (v1, v2) => Math.acos(dot(v1, v2) / (norm(v1) * norm
 combinations(computeHeadingVectors(locations), 2, 2).forEach(([l1, l2]) => {
     if (l1.position && !_.isNil(l1.position.x) && !_.isNil(l1.position.y) && !_.isNil(l2.position.x) && !_.isNil(l2.position.y) &&
         l1.position.headingVector && l2.position.headingVector) {
-        const L1L2Vec = [l2.position.x - l1.position.x, l2.position.y - l1.position.y]
-        const L2L1Vec = [l1.position.x - l2.position.x, l1.position.y - l2.position.y]
-        const distance = euclidean([l1.position.x, l1.position.y], [l2.position.x, l2.position.y])
+        const L1L2Vec = [l2.position.x - l1.position.x, l2.position.y - l1.position.y];
+        const L2L1Vec = [l1.position.x - l2.position.x, l1.position.y - l2.position.y];
+        const distance = euclidean([l1.position.x, l1.position.y], [l2.position.x, l2.position.y]);
         const dotProduct = dot(l1.position.headingVector, l2.position.headingVector);
-        const headingsAngle = radToDeg(angleBetweenVectors(l1.position.headingVector, l2.position.headingVector))
+        const angleBetweenHeadings = radToDeg(angleBetweenVectors(l1.position.headingVector, l2.position.headingVector));
+        const orientationDiff = Math.abs(l1.position.orientation - l2.position.orientation)
         const viewAngleL1 = radToDeg(angleBetweenVectors(l1.position.headingVector, L1L2Vec))
         const viewAngleL2 = radToDeg(angleBetweenVectors(l2.position.headingVector, L2L1Vec))
         console.log(
@@ -69,7 +70,8 @@ combinations(computeHeadingVectors(locations), 2, 2).forEach(([l1, l2]) => {
             '\nHeading Vector L1:', l1.position.headingVector, 'L2:', l2.position.headingVector,
             '\nVector L1 L2:', L1L2Vec, 'L2 L1:', L2L1Vec,
             '\nDistance L1 to L2:', distance, 'L1 dot L2:', dotProduct,
-            '\nHeadings Angle:', headingsAngle, 'View Angle L1:', viewAngleL1, 'L2:', viewAngleL2,
+            '\nAngle Between Headings:', angleBetweenHeadings, 'Orientation Difference:', orientationDiff,
+            '\nView Angle L1:', viewAngleL1, 'L2:', viewAngleL2,
             '\n----------------------------------------------------------------'
         );
     }

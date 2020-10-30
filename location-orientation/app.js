@@ -6,14 +6,14 @@ const { dot, norm } = require('mathjs');
 const degToRad = v => v * Math.PI / 180;
 const radToDeg = v => v * 180 / Math.PI;
 
-//NOTE: Geogebra Locations Simulation: https://www.geogebra.org/calculator/yabhuesw
 const locations = [
+    //NOTE: Geogebra Locations Simulation #2: https://www.geogebra.org/calculator/jzn6nm8s
     {
         deviceUuid: "9ab8e750-bc1e-11e8-a769-3f2e91eebf08",
         username: "test_user_0@yanux.org",
         position: {
-            x: 4, y: 3,
-            orientation: -90,
+            x: 1, y: 1,
+            orientation: 90,
             place: "bedroom"
         }
     },
@@ -21,14 +21,33 @@ const locations = [
         deviceUuid: "9ab8e750-bc1e-11e8-a769-3f2e91eebf09",
         username: "test_user_0@yanux.org",
         position: {
-            //x: 4, y: 1,
-            //x: 2, y: 3,
-            x: 4, y: 5,
-            //x: 7, y: 3,
-            orientation: 135,
+            x: 2, y: 2,
+            orientation: 90,
             place: "bedroom"
         }
     },
+    //NOTE: Geogebra Locations Simulation #1: https://www.geogebra.org/calculator/pegje3qu
+    // {
+    //     deviceUuid: "9ab8e750-bc1e-11e8-a769-3f2e91eebf08",
+    //     username: "test_user_0@yanux.org",
+    //     position: {
+    //         x: 4, y: 3,
+    //         orientation: 90,
+    //         place: "bedroom"
+    //     }
+    // },
+    // {
+    //     deviceUuid: "9ab8e750-bc1e-11e8-a769-3f2e91eebf09",
+    //     username: "test_user_0@yanux.org",
+    //     position: {
+    //         //x: 4, y: 1,
+    //         //x: 2, y: 3,
+    //         x: 4, y: 5,
+    //         //x: 7, y: 3,
+    //         orientation: 225,
+    //         place: "bedroom"
+    //     }
+    // },
     // {
     //     deviceUuid: "9ab8e750-bc1e-11e8-a769-3f2e91eebf10",
     //     username: "test_user_0@yanux.org",
@@ -44,7 +63,7 @@ const headingVectorFromOrientation = orientation => [Math.cos(orientation), Math
 const computeHeadingVectors = locations => {
     locations.forEach(l => {
         if (l.position && !_.isNil(l.position.orientation)) {
-            l.position.orientation = (360 - l.position.orientation) % 360;
+            //l.position.orientation = (360 - l.position.orientation) % 360;
             l.position.headingVector = headingVectorFromOrientation(degToRad(l.position.orientation));
         }
     });

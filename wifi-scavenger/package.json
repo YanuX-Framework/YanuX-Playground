@@ -1,5 +1,5 @@
 {
-  "name": "location-orientation",
+  "name": "wifi-scavenger",
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
@@ -7,12 +7,9 @@
     "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Pedro Albuquerque <pedro@albuquerques.net>",
+  "license": "GPL-3.0-or-later",
   "dependencies": {
-    "combinations": "^1.0.0",
-    "lodash": "^4.17.20",
-    "mathjs": "^7.6.0",
-    "ml-distance-euclidean": "^2.0.0"
+    "node-wifi": "^2.0.14"
   }
 }

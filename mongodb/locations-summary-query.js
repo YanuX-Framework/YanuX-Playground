@@ -1,0 +1,1 @@
+db.getCollection('locations').find({}, { deviceUuid: 1, 'position.x': 1, 'position.y': 1, 'position.orientation': 1 })

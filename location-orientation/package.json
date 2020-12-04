@@ -12,7 +12,7 @@
   "dependencies": {
     "combinations": "^1.0.0",
     "lodash": "^4.17.20",
-    "mathjs": "^8.0.1",
+    "mathjs": "^8.1.0",
     "ml-distance-euclidean": "^2.0.0"
   }
 }

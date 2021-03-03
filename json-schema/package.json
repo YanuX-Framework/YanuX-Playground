@@ -1,0 +1,15 @@
+{
+  "name": "json-schema",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Pedro Albuquerque Santos <pedro@albuquerques.net>",
+  "license": "ISC",
+  "dependencies": {
+    "ajv": "^7.1.1"
+  }
+}

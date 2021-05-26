@@ -10,6 +10,6 @@
   "author": "Pedro Albuquerque Santos <pedro@albuquerques.net>",
   "license": "ISC",
   "dependencies": {
-    "ajv": "^7.1.1"
+    "ajv": "^8.5.0"
   }
 }
